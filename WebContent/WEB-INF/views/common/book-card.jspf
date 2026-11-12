@@ -1,4 +1,4 @@
-﻿<%@ page pageEncoding="UTF-8" %>
+<%@ page pageEncoding="UTF-8" %>
 <article class="book-card">
     <a class="book-cover cat-${book.categoryColor}" href="${ctx}/book?action=detail&id=${book.id}">
         <span class="cover-shine"></span>
@@ -17,10 +17,14 @@
             </c:if>
         </p>
         <div class="book-meta">
-            <span class="price">￥${book.price}</span>
-            <span class="stock ${book.stock == 0 ? 'out' : (book.stock < 10 ? 'low' : '')}">
-                ${book.stock == 0 ? '暂无库存' : '库存 '}${book.stock == 0 ? '' : book.stock}
-            </span>
+            <c:choose>
+                <c:when test="${not empty book.contentFile}">
+                    <span class="readable">可阅读</span>
+                </c:when>
+                <c:otherwise>
+                    <span class="readable muted">暂无正文</span>
+                </c:otherwise>
+            </c:choose>
         </div>
         <div class="book-actions">
             <a href="${ctx}/book?action=detail&id=${book.id}">详情</a>

@@ -26,7 +26,7 @@
         <div class="auth-aside-copy">
             <span class="eyebrow">START YOUR LIBRARY</span>
             <h1>从一本书开始，<br>建一座<em>自己的</em>书阁。</h1>
-            <p>注册后即可创建板块、上架图书、整理库存。你的每一次录入，都会成为书架上一本可被找到的书。</p>
+            <p>注册后即可创建板块、上架图书、上传正文。你的每一次录入，都会成为书架上一本可被找到、可被阅读的书。</p>
             <div class="auth-points">
                 <span><i></i> 免费注册</span>
                 <span><i></i> 数据本地保存</span>

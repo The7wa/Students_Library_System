@@ -39,10 +39,10 @@
             <div class="form-head">
                 <span class="kicker">${mode eq 'edit' ? 'EDIT BOOK' : 'NEW BOOK'}</span>
                 <h1>${mode eq 'edit' ? '编辑图书信息' : '上架一本新书'}</h1>
-                <p>书名、作者、板块与价格为必填项，其余信息可以之后再补充。</p>
+                <p>书名、作者与板块为必填项，正文 TXT 可以在上架后随时补充。</p>
             </div>
 
-            <form action="${ctx}/book" method="post" novalidate>
+            <form action="${ctx}/book" method="post" enctype="multipart/form-data" novalidate>
                 <input type="hidden" name="action" value="save">
                 <input type="hidden" name="id" value="${book.id}">
 
@@ -93,7 +93,7 @@
                         </c:if>
                     </div>
 
-                    <div class="field">
+                    <div class="field field-full">
                         <label for="publisher">出版社 <span class="hint">选填</span></label>
                         <input class="input ${not empty errors.publisher ? 'error' : ''}"
                                id="publisher" name="publisher" type="text" maxlength="80"
@@ -103,24 +103,53 @@
                         </c:if>
                     </div>
 
-                    <div class="field">
-                        <label for="price">价格（元） <span class="req">*</span></label>
-                        <input class="input ${not empty errors.price ? 'error' : ''}"
-                               id="price" name="price" type="number" step="0.01" min="0"
-                               value="${book.price}" placeholder="45.00">
-                        <c:if test="${not empty errors.price}">
-                            <span class="error-text"><c:out value="${errors.price}"/></span>
-                        </c:if>
-                    </div>
+                    <div class="field field-full">
+                        <label for="contentFile">正文 TXT <span class="hint">选填，最大 20MB</span></label>
 
-                    <div class="field">
-                        <label for="stock">库存（册） <span class="req">*</span></label>
-                        <input class="input ${not empty errors.stock ? 'error' : ''}"
-                               id="stock" name="stock" type="number" min="0" step="1"
-                               value="${book.stock}" placeholder="0">
-                        <c:if test="${not empty errors.stock}">
-                            <span class="error-text"><c:out value="${errors.stock}"/></span>
+                        <c:if test="${not empty book.contentFile}">
+                            <div class="current-file">
+                                <span class="current-file-icon">📄</span>
+                                <span class="current-file-text">
+                                    已收录：
+                                    <strong><c:out value="${not empty book.contentName ? book.contentName : book.contentFile}"/></strong>
+                                </span>
+                                <label class="check-inline">
+                                    <input type="checkbox" name="removeContent" value="1"> 移除正文
+                                </label>
+                            </div>
                         </c:if>
+
+                        <div class="file-drop">
+                            <input class="file-input" id="contentFile" name="contentFile" type="file"
+                                   accept=".txt,text/plain" data-file-input>
+                            <label class="file-drop-body" for="contentFile">
+                                <span class="file-drop-icon">＋</span>
+                                <span class="file-drop-text">
+                                    <strong>选择 TXT 文件</strong>
+                                    <small>上传后即可在图书详情页在线阅读</small>
+                                </span>
+                            </label>
+                            <span class="file-selected" data-file-name>未选择文件</span>
+                        </div>
+
+                        <div class="manual-file">
+                            <label for="contentFileName">或使用正文目录中的文件 <span class="hint">选填</span></label>
+                            <input class="input ${not empty errors.contentFileName ? 'error' : ''}"
+                                   id="contentFileName" name="contentFileName" type="text" maxlength="160"
+                                   value="" placeholder="例如：活着.txt">
+                            <c:if test="${not empty errors.contentFileName}">
+                                <span class="error-text"><c:out value="${errors.contentFileName}"/></span>
+                            </c:if>
+                        </div>
+
+                        <c:if test="${not empty errors.contentFile}">
+                            <span class="error-text"><c:out value="${errors.contentFile}"/></span>
+                        </c:if>
+
+                        <p class="field-note">
+                            正文目录：<code><c:out value="${contentDir}"/></code><br>
+                            也可以直接把下载好的 TXT 放进这个目录，再在上面的输入框里填写文件名。
+                        </p>
                     </div>
 
                     <div class="field field-full">

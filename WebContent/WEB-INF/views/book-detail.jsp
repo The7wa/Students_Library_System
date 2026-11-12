@@ -38,8 +38,14 @@
 
             <div class="detail-badges">
                 <span class="badge cat">${book.categoryIcon} <c:out value="${book.categoryName}"/></span>
-                <span class="badge">${book.stock > 0 ? '在架可借' : '暂时缺货'}</span>
-                <span class="badge">库存 ${book.stock} 册</span>
+                <c:choose>
+                    <c:when test="${not empty book.contentFile}">
+                        <span class="badge read">📖 可在线阅读</span>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="badge">暂未收录正文</span>
+                    </c:otherwise>
+                </c:choose>
             </div>
 
             <dl class="meta-list">
@@ -56,8 +62,13 @@
                     <dd><c:out value="${book.isbn}"/></dd>
                 </div>
                 <div>
-                    <dt>价格</dt>
-                    <dd>￥${book.price}</dd>
+                    <dt>正文</dt>
+                    <dd>
+                        <c:choose>
+                            <c:when test="${not empty book.contentFile}">已收录，可在线阅读</c:when>
+                            <c:otherwise>尚未收录</c:otherwise>
+                        </c:choose>
+                    </dd>
                 </div>
                 <div>
                     <dt>上架时间</dt>
@@ -82,7 +93,16 @@
             </div>
 
             <div class="detail-actions">
-                <a class="btn btn-primary btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">编辑图书</a>
+                <c:choose>
+                    <c:when test="${not empty book.contentFile}">
+                        <a class="btn btn-primary btn-sm" data-read-link data-book-id="${book.id}"
+                           href="${ctx}/read?id=${book.id}">开始阅读</a>
+                        <a class="btn btn-ghost btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">编辑图书</a>
+                    </c:when>
+                    <c:otherwise>
+                        <a class="btn btn-soft btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">上传正文</a>
+                    </c:otherwise>
+                </c:choose>
                 <a class="btn btn-ghost btn-sm" href="${ctx}/category?id=${book.categoryId}">返回书架</a>
                 <form action="${ctx}/book" method="post" style="margin-left:auto"
                       data-confirm="确定删除《${fn:escapeXml(book.name)}》吗？此操作不可撤销。">

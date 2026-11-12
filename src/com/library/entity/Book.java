@@ -1,6 +1,5 @@
 package com.library.entity;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 /**
@@ -16,9 +15,11 @@ public class Book {
     private String author;
     private String isbn;
     private String publisher;
-    private BigDecimal price = BigDecimal.ZERO;
-    private int stock;
     private String description;
+    /** 正文 TXT 在正文目录中的文件名（null 表示未收录正文）。 */
+    private String contentFile;
+    /** 上传时的原始文件名，仅用于展示。 */
+    private String contentName;
     private Timestamp createTime;
     private Timestamp updateTime;
 
@@ -94,28 +95,28 @@ public class Book {
         this.publisher = publisher;
     }
 
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public int getStock() {
-        return stock;
-    }
-
-    public void setStock(int stock) {
-        this.stock = stock;
-    }
-
     public String getDescription() {
         return description;
     }
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getContentFile() {
+        return contentFile;
+    }
+
+    public void setContentFile(String contentFile) {
+        this.contentFile = contentFile;
+    }
+
+    public String getContentName() {
+        return contentName;
+    }
+
+    public void setContentName(String contentName) {
+        this.contentName = contentName;
     }
 
     public Timestamp getCreateTime() {
@@ -142,7 +143,8 @@ public class Book {
         return name.substring(0, 1);
     }
 
-    public boolean isAvailable() {
-        return stock > 0;
+    /** 是否已收录正文 TXT，可进入阅读页。 */
+    public boolean isHasContent() {
+        return contentFile != null && !contentFile.isBlank();
     }
 }

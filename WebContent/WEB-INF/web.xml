@@ -60,10 +60,25 @@
     <servlet>
         <servlet-name>bookServlet</servlet-name>
         <servlet-class>com.library.servlet.BookServlet</servlet-class>
+        <!-- 正文 TXT 上传：单个文件上限 32MB，业务层再限制为 20MB -->
+        <multipart-config>
+            <max-file-size>33554432</max-file-size>
+            <max-request-size>41943040</max-request-size>
+            <file-size-threshold>0</file-size-threshold>
+        </multipart-config>
     </servlet>
     <servlet-mapping>
         <servlet-name>bookServlet</servlet-name>
         <url-pattern>/book</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>readServlet</servlet-name>
+        <servlet-class>com.library.servlet.ReadServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>readServlet</servlet-name>
+        <url-pattern>/read</url-pattern>
     </servlet-mapping>
 
     <servlet>

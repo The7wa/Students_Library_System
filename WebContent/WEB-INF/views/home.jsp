@@ -32,8 +32,8 @@
                 <span>在馆书目</span>
             </div>
             <div class="stat">
-                <strong>${stockCount}</strong>
-                <span>馆藏册数</span>
+                <strong>${readableCount}</strong>
+                <span>可阅读</span>
             </div>
             <div class="stat">
                 <strong>${categoryCount}</strong>
@@ -84,42 +84,6 @@
                 <small>为下一类藏书留个位置</small>
             </a>
         </div>
-    </section>
-
-    <section class="section">
-        <div class="section-head">
-            <div>
-                <span class="kicker">NEW ARRIVALS</span>
-                <h2>最近上架</h2>
-                <p>刚刚被放进书架的新书</p>
-            </div>
-            <a class="btn btn-ghost btn-sm" href="${ctx}/search?sort=oldest">查看全部图书 →</a>
-        </div>
-
-        <c:choose>
-            <c:when test="${empty recentBooks}">
-                <div class="empty">
-                    <div class="empty-icon">📚</div>
-                    <h3>书架还是空的</h3>
-                    <p>先创建一个板块，再把第一本书放进来吧。</p>
-                    <a class="btn btn-primary btn-sm" href="${ctx}/category?action=toAdd">新建板块</a>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="recent-grid">
-                    <c:forEach var="book" items="${recentBooks}">
-                        <a class="mini-book" href="${ctx}/book?action=detail&id=${book.id}">
-                            <span class="mini-cover cat-${book.categoryColor}">${book.initial}</span>
-                            <span class="mini-info">
-                                <strong><c:out value="${book.name}"/></strong>
-                                <span><c:out value="${book.author}"/> · <c:out value="${book.categoryName}"/></span>
-                            </span>
-                            <span class="mini-price">￥${book.price}</span>
-                        </a>
-                    </c:forEach>
-                </div>
-            </c:otherwise>
-        </c:choose>
     </section>
 </main>
 

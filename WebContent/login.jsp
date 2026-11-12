@@ -95,11 +95,6 @@
 
             <p class="auth-switch">还没有账号？<a href="${ctx}/register.jsp">注册一个</a></p>
 
-            <div class="demo-hint">
-                演示账号：<code>admin</code> / <code>admin123</code><br>
-                普通读者：<code>demo</code> / <code>demo123</code>
-            </div>
-
             <p class="auth-mini-footer">© 2026 墨卷书阁 · 图书管理系统课程设计</p>
         </div>
     </main>

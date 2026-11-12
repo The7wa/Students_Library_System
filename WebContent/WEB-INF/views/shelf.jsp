@@ -75,9 +75,6 @@
             <select class="select" name="sort" data-autosubmit aria-label="排序方式">
                 <option value="newest" ${sort eq 'newest' or empty sort ? 'selected' : ''}>最近上架</option>
                 <option value="oldest" ${sort eq 'oldest' ? 'selected' : ''}>最早上架</option>
-                <option value="priceAsc" ${sort eq 'priceAsc' ? 'selected' : ''}>价格从低到高</option>
-                <option value="priceDesc" ${sort eq 'priceDesc' ? 'selected' : ''}>价格从高到低</option>
-                <option value="stockDesc" ${sort eq 'stockDesc' ? 'selected' : ''}>库存最多</option>
                 <option value="nameAsc" ${sort eq 'nameAsc' ? 'selected' : ''}>书名 A-Z</option>
             </select>
         </form>

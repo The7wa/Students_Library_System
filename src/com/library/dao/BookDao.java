@@ -19,8 +19,8 @@ import java.util.List;
 public class BookDao {
 
     private static final String SELECT_FIELDS =
-            "SELECT b.id, b.category_id, b.name, b.author, b.isbn, b.publisher, b.price, b.stock, "
-                    + "b.description, b.create_time, b.update_time, "
+            "SELECT b.id, b.category_id, b.name, b.author, b.isbn, b.publisher, "
+                    + "b.description, b.content_file, b.content_name, b.create_time, b.update_time, "
                     + "c.name AS category_name, c.icon AS category_icon, c.color AS category_color "
                     + "FROM book b JOIN category c ON b.category_id = c.id ";
 
@@ -84,8 +84,8 @@ public class BookDao {
     }
 
     public void insert(Book book) {
-        String sql = "INSERT INTO book(category_id, name, author, isbn, publisher, price, stock, description) "
-                + "VALUES (?,?,?,?,?,?,?,?)";
+        String sql = "INSERT INTO book(category_id, name, author, isbn, publisher, description, "
+                + "content_file, content_name) VALUES (?,?,?,?,?,?,?,?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(ps, book);
@@ -101,8 +101,8 @@ public class BookDao {
     }
 
     public boolean update(Book book) {
-        String sql = "UPDATE book SET category_id=?, name=?, author=?, isbn=?, publisher=?, price=?, stock=?, "
-                + "description=?, update_time=CURRENT_TIMESTAMP WHERE id=?";
+        String sql = "UPDATE book SET category_id=?, name=?, author=?, isbn=?, publisher=?, "
+                + "description=?, content_file=?, content_name=?, update_time=CURRENT_TIMESTAMP WHERE id=?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             bind(ps, book);
@@ -135,32 +135,18 @@ public class BookDao {
         }
     }
 
-    public int sumStock() {
-        String sql = "SELECT COALESCE(SUM(stock), 0) FROM book";
+    /**
+     * 已收录正文、可以在线阅读的图书数量。
+     */
+    public int countReadable() {
+        String sql = "SELECT COUNT(*) FROM book WHERE content_file IS NOT NULL AND content_file <> ''";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             return rs.next() ? rs.getInt(1) : 0;
         } catch (SQLException e) {
-            throw new DataAccessException("统计库存失败", e);
+            throw new DataAccessException("统计可阅读图书失败", e);
         }
-    }
-
-    public List<Book> findRecent(int limit) {
-        String sql = SELECT_FIELDS + " ORDER BY b.create_time DESC, b.id DESC LIMIT ?";
-        List<Book> books = new ArrayList<>();
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, limit);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    books.add(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            throw new DataAccessException("查询最近上架失败", e);
-        }
-        return books;
     }
 
     private int count(String where, List<Object> params) {
@@ -183,12 +169,6 @@ public class BookDao {
             return "b.create_time DESC, b.id DESC";
         }
         switch (sort) {
-            case "priceAsc":
-                return "b.price ASC, b.id DESC";
-            case "priceDesc":
-                return "b.price DESC, b.id DESC";
-            case "stockDesc":
-                return "b.stock DESC, b.id DESC";
             case "nameAsc":
                 return "b.name ASC";
             case "oldest":
@@ -204,9 +184,9 @@ public class BookDao {
         ps.setString(3, book.getAuthor());
         ps.setString(4, book.getIsbn());
         ps.setString(5, book.getPublisher());
-        ps.setBigDecimal(6, book.getPrice());
-        ps.setInt(7, book.getStock());
-        ps.setString(8, book.getDescription());
+        ps.setString(6, book.getDescription());
+        ps.setString(7, book.getContentFile());
+        ps.setString(8, book.getContentName());
     }
 
     private Book mapRow(ResultSet rs) throws SQLException {
@@ -220,9 +200,9 @@ public class BookDao {
         book.setAuthor(rs.getString("author"));
         book.setIsbn(rs.getString("isbn"));
         book.setPublisher(rs.getString("publisher"));
-        book.setPrice(rs.getBigDecimal("price"));
-        book.setStock(rs.getInt("stock"));
         book.setDescription(rs.getString("description"));
+        book.setContentFile(rs.getString("content_file"));
+        book.setContentName(rs.getString("content_name"));
         book.setCreateTime(rs.getTimestamp("create_time"));
         book.setUpdateTime(rs.getTimestamp("update_time"));
         return book;
