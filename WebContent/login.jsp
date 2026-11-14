@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>登录 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=19">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=20">
 </head>
 <body class="auth-page"><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <div class="auth-shell">
@@ -67,15 +67,17 @@
                 </div>
             </c:if>
 
-            <form class="auth-form" action="${ctx}/auth" method="post" novalidate>
+            <form class="auth-form" action="${ctx}/auth" method="post" novalidate
+                  autocomplete="off" data-keep-values="${not empty errors ? '1' : '0'}">
                 <input type="hidden" name="action" value="login">
 
                 <div class="field">
                     <label for="username">用户名</label>
                     <input class="input ${not empty errors.username ? 'error' : ''}"
                            id="username" name="username" type="text"
-                           value="${fn:escapeXml(username)}"
-                           placeholder="请输入用户名" autocomplete="username" autofocus>
+                           value="${empty errors ? '' : fn:escapeXml(username)}"
+                           placeholder="请输入用户名" autocomplete="off"
+                           autocapitalize="off" spellcheck="false" autofocus>
                     <c:if test="${not empty errors.username}">
                         <span class="error-text"><c:out value="${errors.username}"/></span>
                     </c:if>
@@ -86,7 +88,7 @@
                     <div class="password-wrap">
                         <input class="input ${not empty errors.password ? 'error' : ''}"
                                id="password" name="password" type="password"
-                               placeholder="请输入密码" autocomplete="current-password">
+                               placeholder="请输入密码" autocomplete="off">
                         <button type="button" class="toggle-password" data-toggle-password="password">显示</button>
                     </div>
                     <c:if test="${not empty errors.password}">
@@ -104,5 +106,54 @@
     </main>
 </div>
 <script src="${ctx}/assets/js/app.js?v=18"></script>
+<script>
+    /* 浏览器可能把上次保存的账号密码自动填进来；没有错误提示时主动清空，保证每次打开是空白。 */
+    (function () {
+        var form = document.querySelector('.auth-form');
+        if (!form || form.getAttribute('data-keep-values') === '1') {
+            return;
+        }
+        var username = document.getElementById('username');
+        var password = document.getElementById('password');
+        var touched = false;
+
+        function markTouched() {
+            touched = true;
+        }
+
+        [username, password].forEach(function (input) {
+            if (input) {
+                input.addEventListener('input', markTouched);
+                input.addEventListener('keydown', markTouched);
+            }
+        });
+
+        function clearAutofill() {
+            if (touched) {
+                return;
+            }
+            if (username) {
+                username.value = '';
+            }
+            if (password) {
+                password.value = '';
+            }
+        }
+
+        window.addEventListener('pageshow', function () {
+            window.setTimeout(clearAutofill, 80);
+        });
+        window.addEventListener('load', function () {
+            window.setTimeout(clearAutofill, 260);
+        });
+        window.setTimeout(clearAutofill, 700);
+
+        /* 有些浏览器会在页面加载后延迟填充，短时间持续清空，直到用户开始输入。 */
+        var guard = window.setInterval(clearAutofill, 250);
+        window.setTimeout(function () {
+            window.clearInterval(guard);
+        }, 3000);
+    })();
+</script>
 </body>
 </html>

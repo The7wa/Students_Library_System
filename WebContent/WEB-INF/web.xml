@@ -119,6 +119,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>bookshelfServlet</servlet-name>
+        <servlet-class>com.library.servlet.BookshelfServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>bookshelfServlet</servlet-name>
+        <url-pattern>/bookshelf</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>adminServlet</servlet-name>
         <servlet-class>com.library.servlet.AdminServlet</servlet-class>
     </servlet>

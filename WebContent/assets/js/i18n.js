@@ -1,4 +1,4 @@
-﻿/* 墨卷书阁 · 界面语言（中文 / English）
+/* 墨卷书阁 · 界面语言（中文 / English）
  * 只翻译界面文案，图书、批注、评论等用户内容保持原文。
  */
 (function () {
@@ -23,7 +23,22 @@
         '读者': 'Reader',
         '个人主页': 'Profile',
         '我的笔记': 'My Notes',
-        '设置': 'Settings',
+        '我的书架': 'My Bookshelf',
+        '加入书架': 'Add to Shelf',
+        '＋ 加入书架': '＋ Add to Shelf',
+        '已在书架': 'In Shelf',
+        '✓ 已在书架': '✓ In Shelf',
+        '移出书架': 'Remove from Shelf',
+        '移出': 'Remove',
+        '继续阅读': 'Continue Reading',
+        '继续阅读 →': 'Continue Reading →',
+        '图书详情': 'Book Details',
+        '书架还是空的': 'Your shelf is empty',
+        '去逛书库 →': 'Browse the library →',
+        '本书': 'books',
+        '暂无正文': 'No text yet',
+        '加入于': 'Added',
+        '喜欢的书放在这里，下次打开直接接着上次的章节读。': 'Keep the books you love here and pick up where you left off.',        '设置': 'Settings',
         '退出登录': 'Sign out',
         '搜索书名、作者或出版社': 'Search title, author or publisher',
         '检索': 'Search',
@@ -190,6 +205,7 @@
         [/^(\d+) 条$/, '$1'],
         [/^(\d+) 条评论$/, '$1 comments'],
         [/^第 (\d+) 章$/, 'Chapter $1'],
+        [/^上次读到第 (\d+) 章$/, 'Last read: Chapter $1'],
         [/^第 (\d+) \/ (\d+) 章$/, 'Chapter $1 / $2'],
         [/^第 (\d+) \/ (\d+) 页$/, 'Page $1 / $2'],
         [/^(\d+) 本藏书$/, '$1 books'],

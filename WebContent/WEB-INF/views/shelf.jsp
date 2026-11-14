@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:out value="${category.name}"/> · 书架 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=19">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=20">
 </head>
 <body><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <%@ include file="common/header.jspf" %>

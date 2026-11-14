@@ -32,6 +32,10 @@ public class Book {
     private int ratingCount;
     /** 是否属于最近上新的 3 本（用于封面“新”角标）。 */
     private boolean newArrival;
+    /** 书架中加入时间（仅书架查询填充）。 */
+    private Timestamp shelfAddedAt;
+    /** 书架中上次阅读章节（仅书架查询填充）。 */
+    private int lastChapter;
     /** 搜索结果中的高亮 HTML / 上下文摘要（仅查询时填充）。 */
     private String searchNameHtml;
     private String searchAuthorHtml;
@@ -184,6 +188,22 @@ public class Book {
         this.newArrival = newArrival;
     }
 
+    public Timestamp getShelfAddedAt() {
+        return shelfAddedAt;
+    }
+
+    public void setShelfAddedAt(Timestamp shelfAddedAt) {
+        this.shelfAddedAt = shelfAddedAt;
+    }
+
+    public int getLastChapter() {
+        return lastChapter;
+    }
+
+    public void setLastChapter(int lastChapter) {
+        this.lastChapter = lastChapter;
+    }
+
     public String getSearchNameHtml() {
         return searchNameHtml;
     }
@@ -253,7 +273,6 @@ public class Book {
     public Timestamp getUpdateTime() {
         return updateTime;
     }
-
     public void setUpdateTime(Timestamp updateTime) {
         this.updateTime = updateTime;
     }

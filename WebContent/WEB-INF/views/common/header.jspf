@@ -24,6 +24,7 @@
         <nav class="topnav" aria-label="主导航">
             <a class="nav-link ${activeNav eq 'home' ? 'active' : ''}" href="${ctx}/home">首页</a>
             <a class="nav-link ${activeNav eq 'search' ? 'active' : ''}" href="${ctx}/search">全部图书</a>
+            <a class="nav-link ${activeNav eq 'bookshelf' ? 'active' : ''}" href="${ctx}/bookshelf">我的书架</a>
             <a class="nav-link" href="${ctx}/book?action=myUploads">我的上传</a>
             <a class="nav-link" href="${ctx}/notification">通知<c:if test="${unreadNotifCount > 0}"><b class="notif-badge">${unreadNotifCount}</b></c:if></a>
             <c:if test="${loginUser.admin}">
@@ -51,6 +52,9 @@
                     <a class="dropdown-item" href="${ctx}/user?action=profile" role="menuitem">
                         <span class="dropdown-icon">◉</span>个人主页
                     </a>
+                    <a class="dropdown-item" href="${ctx}/bookshelf" role="menuitem">
+                        <span class="dropdown-icon">▤</span>我的书架
+                    </a>
                     <a class="dropdown-item" href="${ctx}/user?action=notes" role="menuitem">
                         <span class="dropdown-icon">✎</span>我的笔记
                     </a>
@@ -77,4 +81,4 @@
         }
     })();
 </script>
-<script defer src="${ctx}/assets/js/i18n.js?v=18"></script>
+<script defer src="${ctx}/assets/js/i18n.js?v=20"></script>

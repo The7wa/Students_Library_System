@@ -1,6 +1,7 @@
 package com.library.servlet;
 
 import com.library.dao.BookDao;
+import com.library.dao.BookshelfDao;
 import com.library.dao.CategoryDao;
 import com.library.dao.NotificationDao;
 import com.library.dao.RatingDao;
@@ -32,6 +33,7 @@ import java.util.Map;
 public class BookServlet extends HttpServlet {
 
     private final BookDao bookDao = new BookDao();
+    private final BookshelfDao bookshelfDao = new BookshelfDao();
     private final CategoryDao categoryDao = new CategoryDao();
     private final NotificationDao notificationDao = new NotificationDao();
     private final RatingDao ratingDao = new RatingDao();
@@ -73,6 +75,7 @@ public class BookServlet extends HttpServlet {
                     return;
                 }
                 req.setAttribute("book", book);
+                req.setAttribute("inShelf", bookshelfDao.exists(user.getId(), book.getId()));
                 req.setAttribute("myStars", ratingDao.findByUser(book.getId(), user.getId()));
                 req.setAttribute("avgStars", book.getAvgStars());
                 req.setAttribute("ratingCount", book.getRatingCount());

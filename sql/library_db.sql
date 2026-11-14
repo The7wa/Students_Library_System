@@ -16,6 +16,7 @@ USE library_db;
 DROP TABLE IF EXISTS annotation_comment;
 DROP TABLE IF EXISTS annotation_like;
 DROP TABLE IF EXISTS paragraph_comment;
+DROP TABLE IF EXISTS bookshelf;
 DROP TABLE IF EXISTS rating;
 DROP TABLE IF EXISTS comment;
 DROP TABLE IF EXISTS annotation;
@@ -124,6 +125,17 @@ CREATE TABLE paragraph_comment (
     KEY idx_pcomment_target (book_id, chapter_index, paragraph_index, created_at),
     KEY idx_pcomment_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='段落公开评论';
+
+CREATE TABLE bookshelf (
+    id           INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT      NOT NULL,
+    book_id      INT      NOT NULL,
+    last_chapter INT      NOT NULL DEFAULT 0 COMMENT '上次阅读章节',
+    created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_read_at DATETIME DEFAULT NULL,
+    UNIQUE KEY uk_bookshelf (user_id, book_id),
+    KEY idx_bookshelf_user (user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户书架';
 
 CREATE TABLE comment (
     id            INT AUTO_INCREMENT PRIMARY KEY,

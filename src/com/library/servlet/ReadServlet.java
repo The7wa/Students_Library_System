@@ -2,6 +2,7 @@ package com.library.servlet;
 
 import com.library.dao.AnnotationDao;
 import com.library.dao.BookDao;
+import com.library.dao.BookshelfDao;
 import com.library.dao.CommentDao;
 import com.library.dao.ParagraphCommentDao;
 import com.library.dao.RatingDao;
@@ -31,6 +32,7 @@ import java.util.Map;
 public class ReadServlet extends HttpServlet {
 
     private final BookDao bookDao = new BookDao();
+    private final BookshelfDao bookshelfDao = new BookshelfDao();
     private final AnnotationDao annotationDao = new AnnotationDao();
     private final ParagraphCommentDao paragraphCommentDao = new ParagraphCommentDao();
     private final CommentDao commentDao = new CommentDao();
@@ -86,6 +88,7 @@ public class ReadServlet extends HttpServlet {
         int index = WebUtil.intValue(req.getParameter("chapter"), 0);
         index = Math.max(0, Math.min(index, chapters.size() - 1));
         Chapter chapter = chapters.get(index);
+        bookshelfDao.updateLastRead(user.getId(), book.getId(), index);
 
         List<String> paragraphs = new ArrayList<>();
         for (String line : chapter.getContent().split("\n")) {

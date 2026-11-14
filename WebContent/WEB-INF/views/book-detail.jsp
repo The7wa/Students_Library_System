@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:out value="${book.name}"/> · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=19">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=20">
 </head>
 <body><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <%@ include file="common/header.jspf" %>
@@ -158,6 +158,24 @@
                     <c:when test="${loginUser.admin}">
                         <a class="btn btn-soft btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">上传正文</a>
                     </c:when>
+                </c:choose>
+                <c:choose>
+                    <c:when test="${inShelf}">
+                        <form action="${ctx}/bookshelf" method="post" class="shelf-toggle-form">
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="bookId" value="${book.id}">
+                            <input type="hidden" name="next" value="/book?action=detail&amp;id=${book.id}">
+                            <button type="submit" class="btn btn-soft btn-sm shelf-toggle in-shelf">✓ 已在书架</button>
+                        </form>
+                    </c:when>
+                    <c:otherwise>
+                        <form action="${ctx}/bookshelf" method="post" class="shelf-toggle-form">
+                            <input type="hidden" name="action" value="add">
+                            <input type="hidden" name="bookId" value="${book.id}">
+                            <input type="hidden" name="next" value="/book?action=detail&amp;id=${book.id}">
+                            <button type="submit" class="btn btn-soft btn-sm shelf-toggle">＋ 加入书架</button>
+                        </form>
+                    </c:otherwise>
                 </c:choose>
                 <c:if test="${loginUser.admin}">
                     <a class="btn btn-ghost btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">编辑图书</a>

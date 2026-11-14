@@ -2,7 +2,7 @@
 
 一个用 **JSP + Servlet + JDBC + MySQL** 实现的图书管理系统，按 **图书板块 → 书架 → 图书** 三层组织藏书。
 
-当前版本包含：注册登录、角色权限、图书/板块管理、TXT 在线阅读、阅读进度、私有批注、段落公开评论/回复、星级评分、站内通知、个人主页、设置、我的笔记、中英文界面与阅读主题。
+当前版本包含：注册登录、角色权限、图书/板块管理、TXT 在线阅读、阅读进度、我的书架、私有批注、段落公开评论/回复、星级评分、站内通知、个人主页、设置、我的笔记、中英文界面与阅读主题。
 
 > 项目使用 `javax.servlet`，对应 **Tomcat 9**。Tomcat 10+ 是 `jakarta.servlet`，会报 `ClassNotFoundException`。
 
@@ -12,7 +12,7 @@
 
 ### 账户与个人中心
 
-- 点击右上角头像打开菜单：**个人主页 / 我的笔记 / 设置 / 退出登录**
+- 点击右上角头像打开菜单：**个人主页 / 我的书架 / 我的笔记 / 设置 / 退出登录**
 - 个人主页：查看上传数、批注数、评论数、评分记录；修改昵称、邮箱、个人简介和 emoji 头像
 - 设置：
   - 修改密码
@@ -20,10 +20,12 @@
   - 切换中文 / English 界面
   - 切换纸墨 / 青竹 / 夜读三种主题
 - 我的笔记：汇总自己在所有书中划过的重点、颜色和文字笔记；同一段原文只显示最后一次颜色和笔记
+- 我的书架：在书详情页点「加入书架」，之后从书架页直接继续阅读；会自动记录上次读到的章节
 
 ### 阅读与互动
 
 - 上传 TXT 正文后分章阅读
+- 书详情页支持「加入书架 / 已在书架」，书架页可以直接继续阅读
 - 划选正文添加彩色批注，同一段原文重复标记只更新最后一条，不会变成日志列表
 - 「我的批注」只显示自己的笔记，笔记内容仅本人可见，个人批注不会公开
 - 段落旁显示公开评论数徽标，点击打开评论弹窗：
@@ -117,6 +119,7 @@ mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_reading.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_social.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_profile_notes.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_paragraph_comments.sql
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_bookshelf.sql
 ```
 
 `upgrade_profile_notes.sql` 会新增：
@@ -127,6 +130,10 @@ mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_paragraph_comments
 `upgrade_paragraph_comments.sql` 会新增：
 
 - `paragraph_comment`：段落公开评论 / 回复（与私有批注分离）
+
+`upgrade_bookshelf.sql` 会新增：
+
+- `bookshelf`：用户书架、上次阅读章节
 
 ---
 
@@ -165,6 +172,10 @@ Students_Library_System/
 ```text
 http://localhost:8080/library/
 ```
+
+### 登录页自动填了账号密码
+
+浏览器保存过该站点的登录信息时会自动填充。登录页已设置 `autocomplete="off"`，并在没有错误提示时主动清空账号密码；如果仍然出现，删除浏览器里保存的该站点密码即可。
 
 ### 登录后 500，提示 Unknown column / Table doesn't exist
 

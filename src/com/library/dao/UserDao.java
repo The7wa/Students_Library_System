@@ -140,6 +140,7 @@ public class UserDao {
                 "DELETE FROM annotation_like WHERE annotation_id IN (SELECT id FROM annotation WHERE user_id = ?)",
                 "DELETE FROM annotation WHERE user_id = ?",
                 "DELETE FROM paragraph_comment WHERE user_id = ?",
+                "DELETE FROM bookshelf WHERE user_id = ?",
                 "DELETE FROM comment WHERE user_id = ?",
                 "DELETE FROM rating WHERE user_id = ?",
                 "DELETE FROM notification WHERE user_id = ?",
