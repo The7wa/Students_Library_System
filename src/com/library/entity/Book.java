@@ -20,6 +20,23 @@ public class Book {
     private String contentFile;
     /** 上传时的原始文件名，仅用于展示。 */
     private String contentName;
+    /** 上传者用户 id（null 表示系统预置）。 */
+    private Integer uploaderId;
+    /** 上传者昵称，联查带出。 */
+    private String uploaderName;
+    /** 审核状态：APPROVED / PENDING / REJECTED。 */
+    private String status = "APPROVED";
+    /** 平均评分（1-5，无评分为 0）。 */
+    private double avgStars;
+    /** 评分人数。 */
+    private int ratingCount;
+    /** 是否属于最近上新的 3 本（用于封面“新”角标）。 */
+    private boolean newArrival;
+    /** 搜索结果中的高亮 HTML / 上下文摘要（仅查询时填充）。 */
+    private String searchNameHtml;
+    private String searchAuthorHtml;
+    private String searchPublisherHtml;
+    private String searchSnippetHtml;
     private Timestamp createTime;
     private Timestamp updateTime;
 
@@ -117,6 +134,112 @@ public class Book {
 
     public void setContentName(String contentName) {
         this.contentName = contentName;
+    }
+
+    public Integer getUploaderId() {
+        return uploaderId;
+    }
+
+    public void setUploaderId(Integer uploaderId) {
+        this.uploaderId = uploaderId;
+    }
+
+    public String getUploaderName() {
+        return uploaderName;
+    }
+
+    public void setUploaderName(String uploaderName) {
+        this.uploaderName = uploaderName;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public double getAvgStars() {
+        return avgStars;
+    }
+
+    public void setAvgStars(double avgStars) {
+        this.avgStars = avgStars;
+    }
+
+    public int getRatingCount() {
+        return ratingCount;
+    }
+
+    public void setRatingCount(int ratingCount) {
+        this.ratingCount = ratingCount;
+    }
+
+    public boolean isNewArrival() {
+        return newArrival;
+    }
+
+    public void setNewArrival(boolean newArrival) {
+        this.newArrival = newArrival;
+    }
+
+    public String getSearchNameHtml() {
+        return searchNameHtml;
+    }
+
+    public void setSearchNameHtml(String searchNameHtml) {
+        this.searchNameHtml = searchNameHtml;
+    }
+
+    public String getSearchAuthorHtml() {
+        return searchAuthorHtml;
+    }
+
+    public void setSearchAuthorHtml(String searchAuthorHtml) {
+        this.searchAuthorHtml = searchAuthorHtml;
+    }
+
+    public String getSearchPublisherHtml() {
+        return searchPublisherHtml;
+    }
+
+    public void setSearchPublisherHtml(String searchPublisherHtml) {
+        this.searchPublisherHtml = searchPublisherHtml;
+    }
+
+    public String getSearchSnippetHtml() {
+        return searchSnippetHtml;
+    }
+
+    public void setSearchSnippetHtml(String searchSnippetHtml) {
+        this.searchSnippetHtml = searchSnippetHtml;
+    }
+
+    public boolean isPending() {
+        return "PENDING".equalsIgnoreCase(status);
+    }
+
+    public boolean isRejected() {
+        return "REJECTED".equalsIgnoreCase(status);
+    }
+
+    public String getStatusLabel() {
+        if (isPending()) {
+            return "待审核";
+        }
+        if (isRejected()) {
+            return "未通过";
+        }
+        return "已上架";
+    }
+
+    /** 平均分显示，如 4.5；无评分返回空串。 */
+    public String getAvgStarsLabel() {
+        if (ratingCount <= 0) {
+            return "";
+        }
+        return String.format(java.util.Locale.ROOT, "%.1f", avgStars);
     }
 
     public Timestamp getCreateTime() {

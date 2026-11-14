@@ -1,321 +1,196 @@
-# 墨卷书阁 · 图书管理系统（Students Library System）
+﻿# 墨卷书阁 · 图书管理系统（进阶功能版）
 
-一个用 **JSP + Servlet + JDBC + MySQL** 实现的图书管理系统，按 **图书板块 → 书架 → 图书** 三层组织藏书。包含用户注册登录、板块管理、图书增删改查、全馆搜索、排序与分页，并支持上传 TXT 正文后在网页内分章阅读。
+一个用 **JSP + Servlet + JDBC + MySQL** 实现的图书管理系统，按 **图书板块 → 书架 → 图书** 三层组织藏书。
 
-> 课程设计项目 · 可直接在 IntelliJ IDEA 中配合 Tomcat 9 运行。
+在基础增删改查之上，当前版本增加了：角色权限、上传审核、站内通知、TXT 在线阅读、阅读进度、批注、章节评论、星级评分。
 
----
-
-## 界面预览
-
-### 登录页
-![登录页](docs/screenshots/login.png)
-
-### 主页：图书板块
-![主页](docs/screenshots/home.png)
-
-### 板块书架
-![板块书架](docs/screenshots/shelf.png)
-
-### 图书详情
-![图书详情](docs/screenshots/detail.png)
-
-### 在线阅读
-![在线阅读](docs/screenshots/reader.png)
-
-### 全馆搜索
-![全馆搜索](docs/screenshots/search.png)
-
-### 新建板块
-![新建板块](docs/screenshots/category-form.png)
+> 本项目使用 `javax.servlet`，对应 **Tomcat 9**。Tomcat 10+ 是 `jakarta.servlet`，会报 `ClassNotFoundException`。
 
 ---
 
-## 功能一览
+## 功能
 
-| 模块 | 功能 |
-| --- | --- |
-| 用户 | 注册、登录、退出、PBKDF2 加盐密码、登录拦截 |
-| 主页 | 欢迎语、馆藏统计、图书板块卡片 |
-| 板块 | 新建、编辑、删除板块，自定义 emoji 图标与主题色 |
-| 书架 | 点击板块进入对应书架，只显示本板块图书 |
-| 图书 | 新增、详情、编辑、删除，ISBN、出版社、简介 |
-| 阅读 | 上传 TXT 正文，自动识别编码、按章节切分，在线阅读 |
-| 搜索 | 按书名、作者、ISBN、出版社跨板块搜索 |
-| 排序 | 最近上架、最早上架、书名 |
-| 分页 | 每页 12 条，上一页 / 下一页 |
-| 安全 | PreparedStatement 防 SQL 注入、JSTL 转义防 XSS、Session 登录校验、HttpOnly Cookie |
+### 角色与权限
+
+| 功能 | 管理员 | 普通用户 |
+| --- | --- | --- |
+| 用户管理（增 / 修 / 删） | ✅ | ❌ |
+| 板块管理（增 / 修 / 删） | ✅ | ❌ |
+| 图书管理（增 / 修 / 删） | ✅ | 仅上传、删除自己上传的 |
+| 审核读者上传 | ✅ | ❌ |
+| 删除任意评论 | ✅ | 只能删自己的 |
+| 阅读、批注、评论、打分 | ✅ | ✅ |
+
+- 普通用户上传图书后状态为「待审核」，管理员通过后才出现在书架。
+- 管理员上传的图书直接上架。
+- 普通用户只能删除自己上传的图书。
+- `admin` 是系统最高管理员；其他管理员不能删除、降级或修改 `admin` 账号。
+
+### 通知
+
+- 管理员收到：新用户注册、读者上传待审核、读者发表评论、读者删除自己的上传。
+- 普通用户收到：自己上传作品的审核通过 / 驳回（含驳回原因）。
+- 顶部导航「通知」有未读角标，支持全部标记已读。
+
+### 阅读与互动
+
+- 上传 TXT 正文后，可在网页内分章阅读。
+- 右侧「我的批注」栏：显示当前章节的批注，点击可定位到原文并短暂高亮。
+- 鼠标划选正文文字 → 弹出批注框，可选 5 种颜色，填写笔记；**批注只有本人可见**。
+- 每章底部「本章评论」：所有登录用户可发表、查看；本人可删自己的，管理员可删任何人的。
+- 图书详情页可打 1-5 星，每人每书一票、可修改；展示平均分和评分人数。
+- 书架 / 搜索卡片上显示平均分。
+- 阅读进度保存在浏览器本地，下次打开继续读。
 
 ---
 
 ## 技术栈
 
-- Java 17（实测 JDK 25 也可运行）
-- JSP 2.3 / Servlet 4.0（`javax.servlet`，对应 **Tomcat 9**）
+- Java 17（JDK 17/21/25 均可）
+- JSP 2.3 / Servlet 4.0（`javax.servlet`）
 - JSTL 1.2
 - MySQL 8.0 + mysql-connector-java 8.0.30
 - 原生 JDBC + DAO 分层，不依赖 Spring / Maven
-- IntelliJ IDEA 传统 Web 工程（WebContent + artifact exploded war）
-
-> 注意：本项目使用 `javax.servlet`，请使用 **Tomcat 9.x**。Tomcat 10+ 改成了 `jakarta.servlet`，直接部署会报 `ClassNotFoundException`。
+- IntelliJ IDEA 传统 Web 工程（WebContent + exploded war）
 
 ---
 
 ## 目录结构
 
 ```text
-jspsweb/
+Students_Library_System/
 ├── src/
-│   ├── db.properties                 # 数据库连接配置（改这里）
+│   ├── db.properties              # 数据库连接配置
 │   └── com/library/
-│       ├── entity/                   # User / Category / Book / Page / Chapter
-│       ├── dao/                      # UserDao / CategoryDao / BookDao
-│       ├── servlet/                  # Auth / Home / Category / Book / Search / Read
-│       ├── filter/                   # EncodingFilter / AuthFilter
-│       └── util/                     # DBUtil / PasswordUtil / WebUtil / BookContentStore / TxtBookParser
+│       ├── entity/                # User / Category / Book / Chapter / Comment ...
+│       ├── dao/                   # 用户、图书、板块、批注、评论、评分、通知
+│       ├── servlet/               # 登录、首页、书架、图书、阅读、管理、通知...
+│       ├── filter/                # 编码、登录拦截、通知角标
+│       └── util/                  # DBUtil / PasswordUtil / TXT 解析 / 搜索高亮
 ├── WebContent/
-│   ├── login.jsp                     # 登录
-│   ├── register.jsp                  # 注册
-│   ├── index.jsp                     # 入口跳转
-│   ├── error.jsp                     # 错误页
-│   ├── assets/css/app.css            # 全部手写样式
-│   ├── assets/js/app.js              # 交互脚本
-│   ├── assets/js/reader.js           # 阅读页交互
-│   └── WEB-INF/
-│       ├── web.xml                   # Servlet / Filter 注册
-│       ├── views/                    # 登录后的页面（不可直接访问）
-│       │   ├── home.jsp
-│       │   ├── shelf.jsp
-│       │   ├── search.jsp
-│       │   ├── book-form.jsp
-│       │   ├── book-detail.jsp
-│       │   ├── reader.jsp            # 在线阅读
-│       │   ├── category-form.jsp
-│       │   └── common/               # header / footer / 图书卡片
-│       └── lib/
-│           ├── jstl-1.2.jar
-│           └── mysql-connector-java-8.0.30.jar
-├── sql/library_db.sql                # 建库、建表、示例数据
-├── sql/upgrade_reading.sql           # 已有数据库的在线阅读字段升级
-├── lib/servlet-api.jar               # 仅编译用，不会打进 war
-├── .idea/                            # IDEA 工程配置
-├── jspsweb.iml
-└── README.md
+│   ├── login.jsp / register.jsp
+│   ├── assets/                    # CSS / JS
+│   ├── WEB-INF/web.xml            # Servlet / Filter 注册
+│   ├── WEB-INF/views/             # 登录后的页面
+│   └── WEB-INF/lib/               # JSTL + MySQL 驱动
+├── lib/servlet-api.jar            # 仅编译用，不部署
+├── sql/library_db.sql             # 全量建库脚本
+├── sql/upgrade_reading.sql        # 旧库补正文阅读字段
+├── sql/upgrade_social.sql         # 旧库补审核 / 通知 / 批注 / 评论 / 评分
+├── docs/screenshots/              # 页面截图
+├── .idea/                         # IDEA 工程配置
+└── jspsweb.iml
 ```
 
 ---
 
-## 快速开始
+## 数据库
 
-### 1. 初始化数据库
+项目默认使用专用账号，避免把 root 密码写进项目：
 
-确保本机 MySQL 8.0 已启动。用 **root** 执行：
+| 配置 | 值 |
+| --- | --- |
+| 数据库 | `library_db` |
+| 用户名 | `library_app` |
+| 密码 | `123456` |
 
-```bash
-mysql -uroot -p --default-character-set=utf8mb4 < sql/library_db.sql
+配置文件：[src/db.properties](src/db.properties)
+
+### 首次建库
+
+用 root 执行（会重建表）：
+
+```bat
+mysql -uroot -p --default-character-set=utf8mb4 < sql\library_db.sql
 ```
 
-脚本会：
+脚本会创建 8 个板块、40 本示例图书、2 个演示账号，并创建 `library_app` 账号。
 
-1. 创建数据库 `library_db`（utf8mb4）；
-2. 创建 `users`、`category`、`book` 三张表；
-3. 写入 8 个板块、40 本示例图书、2 个账号；
-4. 创建项目专用账号 `library_app`，密码 `123456`，只授予 `library_db` 权限。
+### 已有旧库升级（保留数据）
 
-**如果数据库已经建过、不想丢数据**，不要重新执行上面的脚本，只执行升级脚本即可：
-
-```bash
-mysql -uroot -p --default-character-set=utf8mb4 < sql/upgrade_reading.sql
+```bat
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_reading.sql
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_social.sql
 ```
 
-它只会给 `book` 表补上 `content_file`、`content_name` 两列，可重复执行。
+> PowerShell 不支持 `<` 重定向时，可以改用 MySQL Workbench 执行，或使用 `cmd /c "mysql ... < sql\..."`。
 
-> 如果不想创建专用账号，也可以删掉脚本末尾的 `CREATE USER / GRANT` 语句，然后把自己的账号密码填进 `src/db.properties`。
+---
 
-### 2. 配置数据库连接
+## 在 IntelliJ IDEA 中运行
 
-编辑 `src/db.properties`：
+1. 用 IDEA 打开本目录（不是它的上一级目录）。
+2. `Project SDK` 选择 JDK 17 或以上。
+3. 确认 `Settings → Build, Execution, Deployment → Application Servers` 里有 **Tomcat 9.0.30**。
+4. 右上角运行配置选择 **Tomcat 9.0.30**，点击运行。
+5. 浏览器访问：**http://localhost:8080/library/**
 
-```properties
-jdbc.url=jdbc:mysql://localhost:3306/library_db?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-jdbc.username=library_app
-jdbc.password=123456
-```
+本地工程已经配置好：
 
-也可以用环境变量覆盖，不必改文件：
+- Web 根目录：`WebContent`
+- Artifact：`jspsweb:Web exploded`
+- 部署上下文：`/library`
+- 编译级别：Java 17
 
-```text
-LIBRARY_JDBC_URL / LIBRARY_JDBC_USERNAME / LIBRARY_JDBC_PASSWORD
-```
+> `.idea/workspace.xml` 含本机路径，默认不提交到 Git。如果换机器后没有运行配置：
+> `Run → Edit Configurations → + → Tomcat Server → Local`，
+> `Deployment → + → Artifact → jspsweb:Web exploded`，
+> `Application context` 填 `/library`。
 
-### 3. 在 IDEA 中运行
-
-1. 用 IDEA 打开 `jspsweb` 目录；
-2. `File → Project Structure → Project SDK` 选择 JDK 17 或以上；
-3. 确认 `Tomcat 9.0.30` 已在 `Settings → Build, Execution, Deployment → Application Servers` 中配置；
-4. 右上角运行配置选择 **Tomcat 9.0.30**，直接启动；
-5. 浏览器访问：<http://localhost:8080/library/>。
-
-IDEA 已配置好：
-
-- Web 根目录：`WebContent`（不是空的 `web` 目录）；
-- artifact：`jspsweb:Web exploded`；
-- 部署上下文：`/library`；
-- 编译级别：Java 17；
-- `lib/servlet-api.jar` 用于编译，不会部署到 `WEB-INF/lib`。
-
-> `.idea/workspace.xml` 含本机路径，未提交到 GitHub。从仓库克隆后，在 IDEA 里新增一个 **Tomcat 9** 运行配置，部署 `jspsweb:Web exploded`，上下文设为 `/library` 即可。
-
-### 4. 演示账号
+### 默认账号
 
 | 账号 | 密码 | 角色 |
 | --- | --- | --- |
 | `admin` | `admin123` | 管理员 |
-| `demo` | `demo123` | 读者 |
+| `demo` | `demo123` | 普通用户 |
 
 也可以直接在注册页创建新账号。
 
 ---
 
-## 页面与路由
+## 常见问题
 
-| 路径 | 说明 |
-| --- | --- |
-| `/login.jsp` | 登录页 |
-| `/register.jsp` | 注册页 |
-| `POST /auth` | `action=login` 登录，`action=register` 注册 |
-| `/auth?action=logout` | 退出登录 |
-| `/home` | 登录后主页（板块总览 + 馆藏统计） |
-| `/category?id=1` | 进入某个板块的书架 |
-| `/category?action=toAdd` | 新建板块 |
-| `/category?action=toEdit&id=1` | 编辑板块 |
-| `POST /category` | `action=save` 保存板块，`action=delete` 删除 |
-| `/book?action=toAdd&categoryId=1` | 新增图书 |
-| `/book?action=toEdit&id=1` | 编辑图书（含正文 TXT 上传） |
-| `/book?action=detail&id=1` | 图书详情 |
-| `/read?id=1&chapter=0` | 在线阅读（章节从 0 开始） |
-| `POST /book` | `action=save` 保存图书，`action=delete` 删除 |
-| `/search?keyword=Java` | 全馆搜索 |
+### 访问 `http://localhost:8080/` 是 404
 
----
+正常。项目部署在 `/library`，请访问：
 
-## 在线阅读使用说明
+```text
+http://localhost:8080/library/
+```
 
-1. 进入任意图书的 **编辑图书** 页面；
-2. 在「正文 TXT」处选择下载好的 `.txt` 文件，保存；
-3. 回到图书详情页，点击 **开始阅读**，会自动按章节切分并显示目录；
-4. 阅读页支持：上一章 / 下一章、键盘 ← → 翻章、目录抽屉、字号调节、纸白 / 护眼 / 夜间三种背景，阅读进度自动保存在浏览器里。
+### 登录后 500，提示 Unknown column / Table doesn't exist
 
-也可以不使用上传，直接把 TXT 放到正文目录：
+数据库还是旧结构，执行：
+
+```bat
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_reading.sql
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_social.sql
+```
+
+### 中文乱码
+
+- 数据库使用 `utf8mb4`
+- JSP 使用 `pageEncoding=UTF-8`
+- `EncodingFilter` 统一请求 / 响应编码
+
+IDEA 可设置 `Settings → Editor → File Encodings` 全部为 UTF-8。
+
+### TXT 正文上传目录
+
+默认保存在：
 
 ```text
 C:\Users\你的用户名\library-books
 ```
 
-然后在编辑页的「或使用正文目录中的文件」里填写文件名（例如 `活着.txt`）即可。
-正文目录可以用环境变量 `LIBRARY_BOOK_DIR` 或 JVM 参数 `-Dlibrary.book.dir=...` 修改。
-
-- 支持 UTF-8、UTF-16（带 BOM）与 GBK/GB18030 编码；
-- 单个文件最大 20MB；
-- 章节标题支持 `第一章`、`第 1 回`、`序章`、`番外`、`Chapter 1` 等常见写法；没有章节标题的 TXT 会按长度自动分节。
-
----
-
-## 演示账号
-
-| 账号 | 密码 | 角色 |
-| --- | --- | --- |
-| `admin` | `admin123` | 管理员 |
-| `demo` | `demo123` | 读者 |
-
-> 登录页不再展示演示账号提示，账号仍然保留在数据库里，方便本地调试。
-
----
-
-## 这次修好的环境问题
-
-原工程能打开但基本跑不起来，已修复：
-
-| 问题 | 修复 |
-| --- | --- |
-| `Book.java` 是空类，`BookDao` / `BookServlet` 无法编译 | 补全实体字段、getter/setter |
-| `jspsweb.iml` 的 Web 根目录指向空的 `web/`，页面实际在 `WebContent/` | Web root 改为 `WebContent` |
-| 运行配置部署路径是 `/jspsweb_Web_exploded` | 改为 `/library`，启动页指向 `/library/` |
-| 只靠 `@WebServlet` 注解，旧版 Tomcat 9.0.30 配合 JDK 25 时注解扫描可能读不懂高版本 class 文件 | 改为 `web.xml` 显式注册，并设置 `metadata-complete="true"` |
-| JSP 需要 JSTL，但 `WEB-INF/lib` 只有 MySQL 驱动 | 加入 `jstl-1.2.jar`，并配置 IDEA 库 |
-| 项目 JDK 是 25，源码却混入了 Java 25 的 `Main.java` 示例 | 删除示例类，统一编译级别为 Java 17 |
-| 中文表单/页面可能乱码 | `EncodingFilter` + JSP `page-encoding=UTF-8` + 数据库 utf8mb4 |
-| `db.properties` 直接写 root 密码 | 改为专用账号，可用环境变量覆盖 |
-
-> Tomcat 9.0.30 实测可以在 JDK 25 上启动并编译 JSP；真正需要注意的是 **Servlet 注解扫描** 和 **Jakarta 命名空间**。本项目已通过 `web.xml` 注册规避前者，通过固定 Tomcat 9 规避后者。
-
----
-
-## 数据库设计
+如果 Tomcat 没有写权限，可在 Tomcat 启动配置的 VM options 加：
 
 ```text
-users                          category
-┌───────────────┐             ┌───────────────┐
-│ id            │             │ id            │
-│ username      │             │ name          │
-│ password      │             │ icon          │
-│ nickname      │             │ description   │
-│ email         │             │ color         │
-│ role          │             │ sort_order    │
-│ created_at    │             │ created_at    │
-└───────────────┘             └───────┬───────┘
-                                      │ 1
-                                      │
-                                      │ N
-                              ┌───────▼───────┐
-                              │ book          │
-                              │ id            │
-                              │ category_id   │
-                              │ name          │
-                              │ author        │
-                              │ isbn          │
-                              │ publisher     │
-                              │ description   │
-                              │ content_file  │
-                              │ content_name  │
-                              │ create_time   │
-                              │ update_time   │
-                              └───────────────┘
-```
-
-- `book.category_id` 外键关联 `category.id`，`ON DELETE CASCADE`：删除板块会连带删除板块内图书。
-- `content_file` 保存正文 TXT 在正文目录中的文件名，`content_name` 保存上传时的原始文件名。
-- 密码字段保存 `pbkdf2_sha256$迭代次数$盐$哈希`，不保存明文。
-- 所有 SQL 使用 `PreparedStatement`；排序字段走白名单，不拼接用户输入。
-
----
-
-## 常用命令
-
-```bash
-# 导入数据库
-mysql -uroot -p --default-character-set=utf8mb4 < sql/library_db.sql
-
-# 重新生成一个密码哈希（可选）
-javac -encoding UTF-8 -d out/production/jspsweb src/com/library/util/PasswordUtil.java
-java -cp out/production/jspsweb com.library.util.PasswordUtil 你的新密码
+-Dlibrary.book.dir=D:\library-books
 ```
 
 ---
 
-## 已知限制
+## 说明
 
-- 这是课程设计项目，未接入连接池（每次请求新建连接），高并发场景应改用 HikariCP/Druid。
-- 所有登录用户都可以管理板块和图书，没有按角色细分权限。
-- 删除操作使用 `confirm` 二次确认，没有回收站。
-- 未实现借阅/归还记录，图书只用于展示与在线阅读，不涉及库存和价格。
-- 阅读进度、字号与背景保存在浏览器 `localStorage`，换浏览器或清理缓存后会丢失。
-- 在线阅读会一次性读取整个 TXT，超过 32MB 的文件暂不支持。
-
----
-
-## 仓库
-
-GitHub：<https://github.com/The7wa/Students_Library_System>
-
-如果这个项目对你有帮助，欢迎点一个 Star ⭐。
+这是课程设计项目，未接入连接池，适合本地演示与学习使用。

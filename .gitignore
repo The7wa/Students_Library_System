@@ -18,3 +18,7 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 项目根目录下本地上传的正文文件，不入库
+/*.txt
+

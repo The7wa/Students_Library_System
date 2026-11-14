@@ -27,6 +27,16 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
+    <!-- 通知角标 / 待审核数量 -->
+    <filter>
+        <filter-name>notificationFilter</filter-name>
+        <filter-class>com.library.filter.NotificationFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>notificationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
     <!-- 这里使用 web.xml 注册，而不是 @WebServlet：
          Tomcat 9.0.30 较旧，配合 JDK 25 时注解扫描可能读不懂高版本 class 文件，
          显式注册可以避开这个问题，部署更稳。 -->
@@ -88,6 +98,51 @@
     <servlet-mapping>
         <servlet-name>searchServlet</servlet-name>
         <url-pattern>/search</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>adminServlet</servlet-name>
+        <servlet-class>com.library.servlet.AdminServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>adminServlet</servlet-name>
+        <url-pattern>/admin</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>notificationServlet</servlet-name>
+        <servlet-class>com.library.servlet.NotificationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>notificationServlet</servlet-name>
+        <url-pattern>/notification</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>annotationServlet</servlet-name>
+        <servlet-class>com.library.servlet.AnnotationServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>annotationServlet</servlet-name>
+        <url-pattern>/annotation</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>commentServlet</servlet-name>
+        <servlet-class>com.library.servlet.CommentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>commentServlet</servlet-name>
+        <url-pattern>/comment</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ratingServlet</servlet-name>
+        <servlet-class>com.library.servlet.RatingServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ratingServlet</servlet-name>
+        <url-pattern>/rating</url-pattern>
     </servlet-mapping>
 
     <session-config>

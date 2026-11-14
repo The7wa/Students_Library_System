@@ -23,7 +23,7 @@ public class CategoryDao {
     public List<Category> findAllWithCount() {
         String sql = "SELECT c.id, c.name, c.icon, c.description, c.color, c.sort_order, c.created_at, "
                 + "COUNT(b.id) AS book_count "
-                + "FROM category c LEFT JOIN book b ON b.category_id = c.id "
+                + "FROM category c LEFT JOIN book b ON b.category_id = c.id AND b.status = 'APPROVED' "
                 + "GROUP BY c.id, c.name, c.icon, c.description, c.color, c.sort_order, c.created_at "
                 + "ORDER BY c.sort_order ASC, c.id ASC";
         List<Category> list = new ArrayList<>();
@@ -41,7 +41,7 @@ public class CategoryDao {
 
     public Category findById(int id) {
         String sql = "SELECT c.id, c.name, c.icon, c.description, c.color, c.sort_order, c.created_at, "
-                + "(SELECT COUNT(*) FROM book b WHERE b.category_id = c.id) AS book_count "
+                + "(SELECT COUNT(*) FROM book b WHERE b.category_id = c.id AND b.status = 'APPROVED') AS book_count "
                 + "FROM category c WHERE c.id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {

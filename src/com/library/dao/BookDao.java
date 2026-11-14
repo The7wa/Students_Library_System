@@ -20,17 +20,24 @@ public class BookDao {
 
     private static final String SELECT_FIELDS =
             "SELECT b.id, b.category_id, b.name, b.author, b.isbn, b.publisher, "
-                    + "b.description, b.content_file, b.content_name, b.create_time, b.update_time, "
-                    + "c.name AS category_name, c.icon AS category_icon, c.color AS category_color "
-                    + "FROM book b JOIN category c ON b.category_id = c.id ";
+                    + "b.description, b.content_file, b.content_name, b.uploader_id, b.status, "
+                    + "b.create_time, b.update_time, "
+                    + "c.name AS category_name, c.icon AS category_icon, c.color AS category_color, "
+                    + "u.nickname AS uploader_name, "
+                    + "(SELECT ROUND(AVG(r.stars), 1) FROM rating r WHERE r.book_id = b.id) AS avg_stars, "
+                    + "(SELECT COUNT(*) FROM rating r WHERE r.book_id = b.id) AS rating_count, "
+                    + "(b.id IN (SELECT id FROM (SELECT id FROM book WHERE status = 'APPROVED' "
+                    + "ORDER BY create_time DESC, id DESC LIMIT 3) recent)) AS is_new "
+                    + "FROM book b JOIN category c ON b.category_id = c.id "
+                    + "LEFT JOIN users u ON u.id = b.uploader_id ";
 
     /**
-     * 分页查询。categoryId 为 null 时表示全部板块。
+     * 分页查询书架 / 检索（只显示已上架图书）。categoryId 为 null 时表示全部板块。
      */
     public Page<Book> search(Integer categoryId, String keyword, String sort, int page, int pageSize) {
         String cleanKeyword = keyword == null ? "" : keyword.trim();
         List<Object> params = new ArrayList<>();
-        StringBuilder where = new StringBuilder(" WHERE 1=1 ");
+        StringBuilder where = new StringBuilder(" WHERE b.status = 'APPROVED' ");
         if (categoryId != null) {
             where.append(" AND b.category_id = ? ");
             params.add(categoryId);
@@ -85,10 +92,16 @@ public class BookDao {
 
     public void insert(Book book) {
         String sql = "INSERT INTO book(category_id, name, author, isbn, publisher, description, "
-                + "content_file, content_name) VALUES (?,?,?,?,?,?,?,?)";
+                + "content_file, content_name, uploader_id, status) VALUES (?,?,?,?,?,?,?,?,?,?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             bind(ps, book);
+            if (book.getUploaderId() != null) {
+                ps.setInt(9, book.getUploaderId());
+            } else {
+                ps.setNull(9, java.sql.Types.INTEGER);
+            }
+            ps.setString(10, book.getStatus() == null ? "APPROVED" : book.getStatus());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -102,11 +115,18 @@ public class BookDao {
 
     public boolean update(Book book) {
         String sql = "UPDATE book SET category_id=?, name=?, author=?, isbn=?, publisher=?, "
-                + "description=?, content_file=?, content_name=?, update_time=CURRENT_TIMESTAMP WHERE id=?";
+                + "description=?, content_file=?, content_name=?, status=?, uploader_id=?, "
+                + "update_time=CURRENT_TIMESTAMP WHERE id=?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             bind(ps, book);
-            ps.setInt(9, book.getId());
+            ps.setString(9, book.getStatus() == null ? "APPROVED" : book.getStatus());
+            if (book.getUploaderId() != null) {
+                ps.setInt(10, book.getUploaderId());
+            } else {
+                ps.setNull(10, java.sql.Types.INTEGER);
+            }
+            ps.setInt(11, book.getId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new DataAccessException("修改图书失败", e);
@@ -125,7 +145,7 @@ public class BookDao {
     }
 
     public int countAll() {
-        String sql = "SELECT COUNT(*) FROM book";
+        String sql = "SELECT COUNT(*) FROM book WHERE status = 'APPROVED'";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -136,10 +156,103 @@ public class BookDao {
     }
 
     /**
+     * 待审核图书数量，供管理员提示。
+     */
+    public int countPending() {
+        String sql = "SELECT COUNT(*) FROM book WHERE status = 'PENDING'";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException e) {
+            throw new DataAccessException("统计待审核图书失败", e);
+        }
+    }
+
+    /**
+     * 待审核图书列表（管理员）。
+     */
+    public List<Book> findPending() {
+        String sql = SELECT_FIELDS + " WHERE b.status = 'PENDING' ORDER BY b.create_time ASC, b.id ASC";
+        return list(sql);
+    }
+
+    /**
+     * 某个用户上传的全部图书（含各状态），用于"我的上传"。
+     */
+    public List<Book> findByUploader(int uploaderId) {
+        String sql = SELECT_FIELDS + " WHERE b.uploader_id = ? ORDER BY b.create_time DESC, b.id DESC";
+        List<Book> books = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, uploaderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    books.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("查询上传图书失败", e);
+        }
+        return books;
+    }
+
+    /**
+     * 最近上新的图书（默认 3 本），用于首页推荐。
+     */
+    public List<Book> findLatest(int limit) {
+        String sql = SELECT_FIELDS + " WHERE b.status = 'APPROVED' "
+                + "ORDER BY b.create_time DESC, b.id DESC LIMIT ?";
+        List<Book> books = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    books.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("查询最新图书失败", e);
+        }
+        return books;
+    }
+
+    /**
+     * 更新审核状态。
+     */
+    public boolean setStatus(int id, String status) {
+        String sql = "UPDATE book SET status = ? WHERE id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DataAccessException("更新审核状态失败", e);
+        }
+    }
+
+    private List<Book> list(String sql) {
+        List<Book> books = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                books.add(mapRow(rs));
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("查询图书失败", e);
+        }
+        return books;
+    }
+
+    /**
      * 已收录正文、可以在线阅读的图书数量。
      */
     public int countReadable() {
-        String sql = "SELECT COUNT(*) FROM book WHERE content_file IS NOT NULL AND content_file <> ''";
+        String sql = "SELECT COUNT(*) FROM book WHERE status = 'APPROVED' "
+                + "AND content_file IS NOT NULL AND content_file <> ''";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -203,6 +316,13 @@ public class BookDao {
         book.setDescription(rs.getString("description"));
         book.setContentFile(rs.getString("content_file"));
         book.setContentName(rs.getString("content_name"));
+        int uploaderId = rs.getInt("uploader_id");
+        book.setUploaderId(rs.wasNull() ? null : uploaderId);
+        book.setUploaderName(rs.getString("uploader_name"));
+        book.setStatus(rs.getString("status"));
+        book.setAvgStars(rs.getDouble("avg_stars"));
+        book.setRatingCount(rs.getInt("rating_count"));
+        book.setNewArrival(rs.getInt("is_new") == 1);
         book.setCreateTime(rs.getTimestamp("create_time"));
         book.setUpdateTime(rs.getTimestamp("update_time"));
         return book;

@@ -28,6 +28,7 @@ public class HomeServlet extends HttpServlet {
         List<Category> categories = categoryDao.findAllWithCount();
 
         req.setAttribute("categories", categories);
+        req.setAttribute("latestBooks", bookDao.findLatest(3));
         req.setAttribute("categoryCount", categories.size());
         req.setAttribute("titleCount", bookDao.countAll());
         req.setAttribute("readableCount", bookDao.countReadable());

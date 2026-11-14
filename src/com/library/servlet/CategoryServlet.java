@@ -5,6 +5,7 @@ import com.library.dao.CategoryDao;
 import com.library.entity.Book;
 import com.library.entity.Category;
 import com.library.entity.Page;
+import com.library.entity.User;
 import com.library.util.WebUtil;
 
 import javax.servlet.ServletException;
@@ -37,9 +38,15 @@ public class CategoryServlet extends HttpServlet {
         String action = WebUtil.trim(req.getParameter("action"));
         switch (action) {
             case "toAdd":
+                if (!requireAdmin(req, resp)) {
+                    return;
+                }
                 showForm(req, resp, null);
                 break;
             case "toEdit":
+                if (!requireAdmin(req, resp)) {
+                    return;
+                }
                 showForm(req, resp, findCategory(req));
                 break;
             default:
@@ -51,6 +58,9 @@ public class CategoryServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
         req.setCharacterEncoding("UTF-8");
+        if (!requireAdmin(req, resp)) {
+            return;
+        }
         String action = WebUtil.trim(req.getParameter("action"));
         if ("delete".equals(action)) {
             delete(req, resp);
@@ -171,5 +181,15 @@ public class CategoryServlet extends HttpServlet {
     private Category findCategory(HttpServletRequest req) {
         int id = WebUtil.intValue(req.getParameter("id"), 0);
         return id > 0 ? categoryDao.findById(id) : null;
+    }
+
+    private boolean requireAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        User user = (User) req.getSession().getAttribute("loginUser");
+        if (user != null && user.isAdmin()) {
+            return true;
+        }
+        WebUtil.flash(req, "error", "该操作需要管理员权限");
+        WebUtil.redirect(req, resp, "/home");
+        return false;
     }
 }

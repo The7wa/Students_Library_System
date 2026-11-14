@@ -1,5 +1,6 @@
 package com.library.servlet;
 
+import com.library.dao.NotificationDao;
 import com.library.dao.UserDao;
 import com.library.entity.User;
 import com.library.util.PasswordUtil;
@@ -25,6 +26,7 @@ public class AuthServlet extends HttpServlet {
             Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     private final UserDao userDao = new UserDao();
+    private final NotificationDao notificationDao = new NotificationDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -133,6 +135,8 @@ public class AuthServlet extends HttpServlet {
         user.setEmail(email);
         user.setRole("USER");
         userDao.insert(user);
+        notificationDao.notifyAdmins("USER",
+                "新用户注册：" + user.getDisplayName() + "（" + user.getUsername() + "）", "/admin");
 
         startSession(req, user);
         WebUtil.flash(req, "success", "注册成功，欢迎加入墨卷书阁，" + nickname + "！");

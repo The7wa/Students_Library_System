@@ -8,9 +8,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>注册 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16?v=6">
 </head>
-<body class="auth-page">
+<body class="auth-page"><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <div class="auth-shell">
     <aside class="auth-aside">
         <div class="auth-aside-top">
@@ -129,6 +129,6 @@
         </div>
     </main>
 </div>
-<script src="${ctx}/assets/js/app.js"></script>
+<script src="${ctx}/assets/js/app.js?v=16"></script>
 </body>
 </html>

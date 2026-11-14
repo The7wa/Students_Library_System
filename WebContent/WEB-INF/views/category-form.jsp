@@ -18,10 +18,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${mode eq 'edit' ? '编辑板块' : '新建板块'} · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16?v=6">
 </head>
-<body>
-<%@ include file="common/header.jspf" %>
+<body><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="${ctx}/home" aria-label="墨卷书阁首页">
+            <span class="brand-mark">墨</span>
+            <span class="brand-text">
+                <strong>墨卷书阁</strong>
+                <small>LIBRARY SYSTEM</small>
+            </span>
+        </a>
+
+        <form class="global-search" action="${ctx}/search" method="get" role="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20l-3.2-3.2"></path>
+            </svg>
+            <input type="text" name="keyword" value="${fn:escapeXml(keyword)}"
+                   placeholder="搜索书名、作者或出版社" autocomplete="off">
+            <button type="submit">检索</button>
+        </form>
+
+        <nav class="topnav" aria-label="主导航">
+            <a class="nav-link ${activeNav eq 'home' ? 'active' : ''}" href="${ctx}/home">首页</a>
+            <a class="nav-link ${activeNav eq 'search' ? 'active' : ''}" href="${ctx}/search">全部图书</a>
+            <a class="nav-link" href="${ctx}/book?action=myUploads">我的上传</a>
+            <a class="nav-link" href="${ctx}/notification">通知<c:if test="${unreadNotifCount > 0}"><b class="notif-badge">${unreadNotifCount}</b></c:if></a>
+            <c:if test="${loginUser.admin}">
+                <a class="nav-link" href="${ctx}/admin">管理<c:if test="${pendingBookCount > 0}"><b class="notif-badge">${pendingBookCount}</b></c:if></a>
+            </c:if>
+            <span class="nav-divider"></span>
+            <span class="user-chip" title="${fn:escapeXml(loginUser.displayName)}">
+                <span class="avatar">${fn:substring(loginUser.displayName, 0, 1)}</span>
+                <span class="user-meta">
+                    <strong><c:out value="${loginUser.displayName}"/></strong>
+                    <small>${loginUser.admin ? '管理员' : '读者'}</small>
+                </span>
+            </span>
+            <a class="logout" href="${ctx}/auth?action=logout" title="退出登录">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <path d="M16 17l5-5-5-5M21 12H9"></path>
+                </svg>
+                退出
+            </a>
+        </nav>
+    </div>
+</header>
+
+<c:if test="${not empty sessionScope.flash}">
+    <div class="flash-wrap">
+        <div class="flash flash-${sessionScope.flash.type}" role="status">
+            <span class="flash-dot"></span>
+            <span class="flash-text"><c:out value="${sessionScope.flash.message}"/></span>
+            <button type="button" class="flash-close" aria-label="关闭提示">×</button>
+        </div>
+    </div>
+    <c:remove var="flash" scope="session"/>
+</c:if>
+
 
 <main class="page">
     <div class="form-page">
@@ -150,6 +207,12 @@
     </div>
 </main>
 
-<%@ include file="common/footer.jspf" %>
+<footer class="site-footer">
+    <div class="footer-inner">
+        <p><span class="footer-brand">墨卷书阁</span> · 让每一本书都回到它的位置</p>
+    </div>
+</footer>
+<script src="${ctx}/assets/js/app.js?v=16"></script>
+
 </body>
 </html>

@@ -1,8 +1,0 @@
-﻿<%@ page pageEncoding="UTF-8" %>
-<footer class="site-footer">
-    <div class="footer-inner">
-        <p><span class="footer-brand">墨卷书阁</span> · 让每一本书都回到它的位置</p>
-        <p class="footer-meta">JSP + Servlet + MySQL · Tomcat 9 · 课程设计</p>
-    </div>
-</footer>
-<script src="${ctx}/assets/js/app.js"></script>

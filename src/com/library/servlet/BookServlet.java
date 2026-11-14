@@ -2,8 +2,11 @@ package com.library.servlet;
 
 import com.library.dao.BookDao;
 import com.library.dao.CategoryDao;
+import com.library.dao.NotificationDao;
+import com.library.dao.RatingDao;
 import com.library.entity.Book;
 import com.library.entity.Category;
+import com.library.entity.User;
 import com.library.util.BookContentStore;
 import com.library.util.WebUtil;
 
@@ -14,15 +17,24 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 图书：书架中的新增、修改、删除、详情，以及正文 TXT 的上传与移除。
+ * 图书：上传（用户，需审核）、增删改（管理员）、详情、我的上传。
+ *
+ * <p>权限规则：</p>
+ * <ul>
+ *   <li>管理员：图书的新增、修改、删除、审核，全部允许，上架无需审核。</li>
+ *   <li>普通用户：只能上传图书（进入待审核状态），可删除自己上传的图书。</li>
+ * </ul>
  */
 public class BookServlet extends HttpServlet {
 
     private final BookDao bookDao = new BookDao();
     private final CategoryDao categoryDao = new CategoryDao();
+    private final NotificationDao notificationDao = new NotificationDao();
+    private final RatingDao ratingDao = new RatingDao();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -33,6 +45,9 @@ public class BookServlet extends HttpServlet {
                 showForm(req, resp, null, WebUtil.intValue(req.getParameter("categoryId"), 0));
                 break;
             case "toEdit": {
+                if (!requireAdmin(req, resp)) {
+                    return;
+                }
                 Book book = findBook(req);
                 if (book == null) {
                     WebUtil.redirect(req, resp, "/home");
@@ -43,13 +58,32 @@ public class BookServlet extends HttpServlet {
             }
             case "detail": {
                 Book book = findBook(req);
+                User user = currentUser(req);
                 if (book == null) {
                     WebUtil.flash(req, "error", "图书不存在或已被删除");
                     WebUtil.redirect(req, resp, "/home");
                     return;
                 }
+                boolean allowed = user.isAdmin()
+                        || !book.isPending() && !book.isRejected()
+                        || (book.getUploaderId() != null && book.getUploaderId() == user.getId());
+                if (!allowed) {
+                    WebUtil.flash(req, "error", "这本书还在审核中，暂时无法查看");
+                    WebUtil.redirect(req, resp, "/home");
+                    return;
+                }
                 req.setAttribute("book", book);
+                req.setAttribute("myStars", ratingDao.findByUser(book.getId(), user.getId()));
+                req.setAttribute("avgStars", book.getAvgStars());
+                req.setAttribute("ratingCount", book.getRatingCount());
                 req.getRequestDispatcher("/WEB-INF/views/book-detail.jsp").forward(req, resp);
+                break;
+            }
+            case "myUploads": {
+                User user = currentUser(req);
+                List<Book> books = bookDao.findByUploader(user.getId());
+                req.setAttribute("books", books);
+                req.getRequestDispatcher("/WEB-INF/views/my-uploads.jsp").forward(req, resp);
                 break;
             }
             default:
@@ -85,20 +119,35 @@ public class BookServlet extends HttpServlet {
 
     private void save(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        User user = currentUser(req);
         int id = WebUtil.intValue(req.getParameter("id"), 0);
         Book existing = id > 0 ? bookDao.findById(id) : null;
+
+        // 修改仅管理员；新增（上传）所有登录用户均可。
+        if (id > 0 && !user.isAdmin()) {
+            WebUtil.flash(req, "error", "只有管理员可以修改图书");
+            WebUtil.redirect(req, resp, "/home");
+            return;
+        }
 
         Book book = new Book();
         book.setId(id);
         book.setCategoryId(WebUtil.intValue(req.getParameter("categoryId"), 0));
         book.setName(WebUtil.trim(req.getParameter("name")));
         book.setAuthor(WebUtil.trim(req.getParameter("author")));
-        book.setIsbn(WebUtil.trim(req.getParameter("isbn")));
+        String isbnParam = req.getParameter("isbn");
+        book.setIsbn(isbnParam == null && existing != null ? existing.getIsbn() : WebUtil.trim(isbnParam));
         book.setPublisher(WebUtil.trim(req.getParameter("publisher")));
         book.setDescription(WebUtil.trim(req.getParameter("description")));
         if (existing != null) {
             book.setContentFile(existing.getContentFile());
             book.setContentName(existing.getContentName());
+            book.setUploaderId(existing.getUploaderId());
+            // 管理员编辑被驳回的图书，视为重新通过审核
+            book.setStatus(existing.isRejected() && user.isAdmin() ? "APPROVED" : existing.getStatus());
+        } else {
+            book.setUploaderId(user.getId());
+            book.setStatus(user.isAdmin() ? "APPROVED" : "PENDING");
         }
 
         Map<String, String> errors = new LinkedHashMap<>();
@@ -190,12 +239,23 @@ public class BookServlet extends HttpServlet {
             return;
         }
 
+        String redirectUrl;
         if (id > 0) {
             bookDao.update(book);
             WebUtil.flash(req, "success", "《" + book.getName() + "》已更新");
+            redirectUrl = "/category?id=" + book.getCategoryId();
         } else {
             bookDao.insert(book);
-            WebUtil.flash(req, "success", "《" + book.getName() + "》已上架");
+            if (user.isAdmin()) {
+                WebUtil.flash(req, "success", "《" + book.getName() + "》已上架");
+                redirectUrl = "/category?id=" + book.getCategoryId();
+            } else {
+                WebUtil.flash(req, "success", "《" + book.getName() + "》已提交，等待管理员审核");
+                notificationDao.notifyAdmins("UPLOAD",
+                        user.getDisplayName() + " 上传了新书《" + book.getName() + "》，等待审核",
+                        "/admin");
+                redirectUrl = "/book?action=myUploads";
+            }
         }
 
         if (existing != null) {
@@ -204,7 +264,7 @@ public class BookServlet extends HttpServlet {
                 BookContentStore.deleteManaged(oldFile);
             }
         }
-        WebUtil.redirect(req, resp, "/category?id=" + book.getCategoryId());
+        WebUtil.redirect(req, resp, redirectUrl);
     }
 
     private void forwardForm(HttpServletRequest req, HttpServletResponse resp, Book book, int id,
@@ -223,6 +283,7 @@ public class BookServlet extends HttpServlet {
     }
 
     private void delete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        User user = currentUser(req);
         int id = WebUtil.intValue(req.getParameter("id"), 0);
         Book book = id > 0 ? bookDao.findById(id) : null;
         if (book == null) {
@@ -230,10 +291,41 @@ public class BookServlet extends HttpServlet {
             WebUtil.redirect(req, resp, "/home");
             return;
         }
+        // 管理员可删除任何图书；普通用户只能删除自己上传的。
+        boolean own = book.getUploaderId() != null && book.getUploaderId() == user.getId();
+        if (!user.isAdmin() && !own) {
+            WebUtil.flash(req, "error", "只有管理员或上传者本人可以删除这本书");
+            WebUtil.redirect(req, resp, "/category?id=" + book.getCategoryId());
+            return;
+        }
         bookDao.delete(id);
         BookContentStore.deleteManaged(book.getContentFile());
-        WebUtil.flash(req, "success", "《" + book.getName() + "》已下架删除");
-        WebUtil.redirect(req, resp, "/category?id=" + book.getCategoryId());
+        WebUtil.flash(req, "success", "《" + book.getName() + "》已删除");
+        if (!user.isAdmin()) {
+            notificationDao.notifyAdmins("SYSTEM",
+                    user.getDisplayName() + " 删除了自己上传的《" + book.getName() + "》", null);
+            WebUtil.redirect(req, resp, "/book?action=myUploads");
+            return;
+        }
+        if (own) {
+            WebUtil.redirect(req, resp, "/book?action=myUploads");
+        } else {
+            WebUtil.redirect(req, resp, "/category?id=" + book.getCategoryId());
+        }
+    }
+
+    private boolean requireAdmin(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        User user = currentUser(req);
+        if (user.isAdmin()) {
+            return true;
+        }
+        WebUtil.flash(req, "error", "该操作需要管理员权限");
+        WebUtil.redirect(req, resp, "/home");
+        return false;
+    }
+
+    private User currentUser(HttpServletRequest req) {
+        return (User) req.getSession().getAttribute("loginUser");
     }
 
     private Book findBook(HttpServletRequest req) {

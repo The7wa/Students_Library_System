@@ -8,10 +8,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:out value="${book.name}"/> · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16?v=6">
 </head>
-<body>
-<%@ include file="common/header.jspf" %>
+<body><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
+<header class="topbar">
+    <div class="topbar-inner">
+        <a class="brand" href="${ctx}/home" aria-label="墨卷书阁首页">
+            <span class="brand-mark">墨</span>
+            <span class="brand-text">
+                <strong>墨卷书阁</strong>
+                <small>LIBRARY SYSTEM</small>
+            </span>
+        </a>
+
+        <form class="global-search" action="${ctx}/search" method="get" role="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <path d="M20 20l-3.2-3.2"></path>
+            </svg>
+            <input type="text" name="keyword" value="${fn:escapeXml(keyword)}"
+                   placeholder="搜索书名、作者或出版社" autocomplete="off">
+            <button type="submit">检索</button>
+        </form>
+
+        <nav class="topnav" aria-label="主导航">
+            <a class="nav-link ${activeNav eq 'home' ? 'active' : ''}" href="${ctx}/home">首页</a>
+            <a class="nav-link ${activeNav eq 'search' ? 'active' : ''}" href="${ctx}/search">全部图书</a>
+            <a class="nav-link" href="${ctx}/book?action=myUploads">我的上传</a>
+            <a class="nav-link" href="${ctx}/notification">通知<c:if test="${unreadNotifCount > 0}"><b class="notif-badge">${unreadNotifCount}</b></c:if></a>
+            <c:if test="${loginUser.admin}">
+                <a class="nav-link" href="${ctx}/admin">管理<c:if test="${pendingBookCount > 0}"><b class="notif-badge">${pendingBookCount}</b></c:if></a>
+            </c:if>
+            <span class="nav-divider"></span>
+            <span class="user-chip" title="${fn:escapeXml(loginUser.displayName)}">
+                <span class="avatar">${fn:substring(loginUser.displayName, 0, 1)}</span>
+                <span class="user-meta">
+                    <strong><c:out value="${loginUser.displayName}"/></strong>
+                    <small>${loginUser.admin ? '管理员' : '读者'}</small>
+                </span>
+            </span>
+            <a class="logout" href="${ctx}/auth?action=logout" title="退出登录">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <path d="M16 17l5-5-5-5M21 12H9"></path>
+                </svg>
+                退出
+            </a>
+        </nav>
+    </div>
+</header>
+
+<c:if test="${not empty sessionScope.flash}">
+    <div class="flash-wrap">
+        <div class="flash flash-${sessionScope.flash.type}" role="status">
+            <span class="flash-dot"></span>
+            <span class="flash-text"><c:out value="${sessionScope.flash.message}"/></span>
+            <button type="button" class="flash-close" aria-label="关闭提示">×</button>
+        </div>
+    </div>
+    <c:remove var="flash" scope="session"/>
+</c:if>
+
 
 <main class="page">
     <nav class="breadcrumb" aria-label="面包屑">
@@ -24,8 +81,11 @@
 
     <div class="detail-grid">
         <div class="detail-cover-wrap">
-            <div class="detail-cover cat-${book.categoryColor}">
+            <div class="detail-cover cat-${book.categoryColor}" data-cover-book="${book.id}">
                 <span class="cover-initial">${book.initial}</span>
+                <c:if test="${book.newArrival}">
+                    <span class="cover-new">新<i>✦</i></span>
+                </c:if>
                 <span class="detail-cover-title"><c:out value="${book.name}"/></span>
                 <span class="detail-cover-author"><c:out value="${book.author}"/> 著</span>
             </div>
@@ -38,6 +98,13 @@
 
             <div class="detail-badges">
                 <span class="badge cat">${book.categoryIcon} <c:out value="${book.categoryName}"/></span>
+                <span class="badge status-${fn:toLowerCase(book.status)}">
+                    <c:choose>
+                        <c:when test="${book.pending}">⏳ 待审核</c:when>
+                        <c:when test="${book.rejected}">✖ 未通过审核</c:when>
+                        <c:otherwise>✔ 已上架</c:otherwise>
+                    </c:choose>
+                </span>
                 <c:choose>
                     <c:when test="${not empty book.contentFile}">
                         <span class="badge read">📖 可在线阅读</span>
@@ -48,6 +115,26 @@
                 </c:choose>
             </div>
 
+            <div class="rating-summary">
+                <span class="stars-avg" title="平均分 ${avgStars}">
+                    <span class="stars-base">★★★★★</span>
+                    <span class="stars-fill" style="width:${avgStars / 5 * 100}%">★★★★★</span>
+                </span>
+                <strong>${empty book.avgStarsLabel ? '暂无评分' : book.avgStarsLabel}</strong>
+                <span class="rating-count">${book.ratingCount} 人评分</span>
+            </div>
+
+            <c:if test="${not empty book.contentFile}">
+                <div class="detail-read-row">
+                    <a class="btn btn-primary detail-read-cta" href="${ctx}/read?id=${book.id}">开始阅读 →</a>
+                    <span class="detail-read-tip">在线阅读 · 支持批注与章节评论</span>
+                </div>
+            </c:if>
+
+            <c:if test="${not empty book.uploaderName}">
+                <p class="uploader-line">上传者：<c:out value="${book.uploaderName}"/></p>
+            </c:if>
+
             <dl class="meta-list">
                 <div>
                     <dt>作者</dt>
@@ -56,10 +143,6 @@
                 <div>
                     <dt>出版社</dt>
                     <dd><c:out value="${book.publisher}"/></dd>
-                </div>
-                <div>
-                    <dt>ISBN</dt>
-                    <dd><c:out value="${book.isbn}"/></dd>
                 </div>
                 <div>
                     <dt>正文</dt>
@@ -92,29 +175,58 @@
                 </c:choose>
             </div>
 
+            <div class="rate-box">
+                <div class="rate-head">
+                    <strong>${myStars > 0 ? '我的评分' : '给这本书打分'}</strong>
+                    <span>${myStars > 0 ? '已评 ' : ''}${myStars > 0 ? myStars : ''}${myStars > 0 ? ' 星，可重新选择' : '满分 5 星'}</span>
+                </div>
+                <form action="${ctx}/rating" method="post" class="star-form">
+                    <input type="hidden" name="bookId" value="${book.id}">
+                    <div class="star-input">
+                        <c:forEach var="i" begin="1" end="5" varStatus="st">
+                            <c:set var="s" value="${6 - st.index}"/>
+                            <input type="radio" id="star-${s}" name="stars" value="${s}"
+                                   <c:if test="${myStars == s}">checked</c:if> required>
+                            <label for="star-${s}" title="${s} 星">★</label>
+                        </c:forEach>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">提交评分</button>
+                </form>
+            </div>
+
             <div class="detail-actions">
                 <c:choose>
                     <c:when test="${not empty book.contentFile}">
                         <a class="btn btn-primary btn-sm" data-read-link data-book-id="${book.id}"
                            href="${ctx}/read?id=${book.id}">开始阅读</a>
-                        <a class="btn btn-ghost btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">编辑图书</a>
                     </c:when>
-                    <c:otherwise>
+                    <c:when test="${loginUser.admin}">
                         <a class="btn btn-soft btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">上传正文</a>
-                    </c:otherwise>
+                    </c:when>
                 </c:choose>
+                <c:if test="${loginUser.admin}">
+                    <a class="btn btn-ghost btn-sm" href="${ctx}/book?action=toEdit&id=${book.id}">编辑图书</a>
+                </c:if>
                 <a class="btn btn-ghost btn-sm" href="${ctx}/category?id=${book.categoryId}">返回书架</a>
-                <form action="${ctx}/book" method="post" style="margin-left:auto"
-                      data-confirm="确定删除《${fn:escapeXml(book.name)}》吗？此操作不可撤销。">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="id" value="${book.id}">
-                    <button class="btn btn-danger-soft btn-sm" type="submit">删除这本书</button>
-                </form>
+                <c:if test="${loginUser.admin or book.uploaderId == loginUser.id}">
+                    <form action="${ctx}/book" method="post" style="margin-left:auto"
+                          data-confirm="确定删除《${fn:escapeXml(book.name)}》吗？此操作不可撤销。">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id" value="${book.id}">
+                        <button class="btn btn-danger-soft btn-sm" type="submit">删除这本书</button>
+                    </form>
+                </c:if>
             </div>
         </section>
     </div>
 </main>
 
-<%@ include file="common/footer.jspf" %>
+<footer class="site-footer">
+    <div class="footer-inner">
+        <p><span class="footer-brand">墨卷书阁</span> · 让每一本书都回到它的位置</p>
+    </div>
+</footer>
+<script src="${ctx}/assets/js/app.js?v=16"></script>
+
 </body>
 </html>
