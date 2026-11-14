@@ -11,6 +11,9 @@ public class User {
     private String password;
     private String nickname;
     private String email;
+    private String avatar;
+    private String bio;
+    private String lang = "zh";
     private String role = "USER";
     private Timestamp createdAt;
 
@@ -54,6 +57,30 @@ public class User {
         this.email = email;
     }
 
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+
+    public String getBio() {
+        return bio;
+    }
+
+    public void setBio(String bio) {
+        this.bio = bio;
+    }
+
+    public String getLang() {
+        return lang;
+    }
+
+    public void setLang(String lang) {
+        this.lang = lang;
+    }
+
     public String getRole() {
         return role;
     }
@@ -73,6 +100,15 @@ public class User {
     /** 页面展示名：优先昵称。 */
     public String getDisplayName() {
         return nickname == null || nickname.isBlank() ? username : nickname;
+    }
+
+    /** 头像：优先用户设置的 emoji，否则用昵称首字。 */
+    public String getAvatarText() {
+        if (avatar != null && !avatar.isBlank()) {
+            return avatar;
+        }
+        String name = getDisplayName();
+        return name == null || name.isEmpty() ? "书" : name.substring(0, 1);
     }
 
     public boolean isAdmin() {

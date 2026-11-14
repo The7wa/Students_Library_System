@@ -18,9 +18,11 @@ import java.util.List;
  */
 public class UserDao {
 
+    private static final String USER_COLUMNS =
+            "id, username, password, nickname, email, avatar, bio, lang, role, created_at";
+
     public User findByUsername(String username) {
-        String sql = "SELECT id, username, password, nickname, email, role, created_at "
-                + "FROM users WHERE username = ?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users WHERE username = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -33,8 +35,7 @@ public class UserDao {
     }
 
     public User findById(int id) {
-        String sql = "SELECT id, username, password, nickname, email, role, created_at "
-                + "FROM users WHERE id = ?";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users WHERE id = ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -46,12 +47,8 @@ public class UserDao {
         }
     }
 
-    /**
-     * 全部用户列表（管理员页）。
-     */
     public List<User> findAll() {
-        String sql = "SELECT id, username, password, nickname, email, role, created_at "
-                + "FROM users ORDER BY id ASC";
+        String sql = "SELECT " + USER_COLUMNS + " FROM users ORDER BY id ASC";
         List<User> users = new ArrayList<>();
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -65,9 +62,6 @@ public class UserDao {
         return users;
     }
 
-    /**
-     * 管理员数量，防止把最后一个管理员降级或删除。
-     */
     public int countAdmins() {
         String sql = "SELECT COUNT(*) FROM users WHERE role = 'ADMIN'";
         try (Connection conn = DBUtil.getConnection();
@@ -79,9 +73,7 @@ public class UserDao {
         }
     }
 
-    /**
-     * 更新用户资料（密码为 null 表示不改）。
-     */
+    /** 管理员后台修改昵称 / 邮箱 / 角色。 */
     public boolean update(User user) {
         String sql = "UPDATE users SET nickname=?, email=?, role=? WHERE id=?";
         try (Connection conn = DBUtil.getConnection();
@@ -93,6 +85,34 @@ public class UserDao {
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new DataAccessException("修改用户失败", e);
+        }
+    }
+
+    /** 个人主页修改资料：昵称、邮箱、简介、头像。 */
+    public boolean updateProfile(User user) {
+        String sql = "UPDATE users SET nickname=?, email=?, bio=?, avatar=? WHERE id=?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, user.getNickname());
+            ps.setString(2, user.getEmail());
+            ps.setString(3, user.getBio());
+            ps.setString(4, user.getAvatar());
+            ps.setInt(5, user.getId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DataAccessException("修改个人资料失败", e);
+        }
+    }
+
+    public boolean updateLanguage(int id, String lang) {
+        String sql = "UPDATE users SET lang=? WHERE id=?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, lang);
+            ps.setInt(2, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DataAccessException("修改语言设置失败", e);
         }
     }
 
@@ -108,11 +128,18 @@ public class UserDao {
         }
     }
 
+    /**
+     * 注销用户：清理其批注、批注评论、点赞、章节评论、评分、通知；
+     * 其上传的图书保留，但 uploader_id 置空。
+     */
     public boolean delete(int id) {
-        // 清理该用户的评论、批注、评分、通知，并保留其上传图书（上传者置空）
         String[] cleanupSql = {
-                "DELETE FROM comment WHERE user_id = ?",
+                "DELETE FROM annotation_comment WHERE user_id = ?",
+                "DELETE FROM annotation_like WHERE user_id = ?",
+                "DELETE FROM annotation_comment WHERE annotation_id IN (SELECT id FROM annotation WHERE user_id = ?)",
+                "DELETE FROM annotation_like WHERE annotation_id IN (SELECT id FROM annotation WHERE user_id = ?)",
                 "DELETE FROM annotation WHERE user_id = ?",
+                "DELETE FROM comment WHERE user_id = ?",
                 "DELETE FROM rating WHERE user_id = ?",
                 "DELETE FROM notification WHERE user_id = ?",
                 "UPDATE book SET uploader_id = NULL WHERE uploader_id = ?"
@@ -159,14 +186,18 @@ public class UserDao {
     }
 
     public void insert(User user) {
-        String sql = "INSERT INTO users(username, password, nickname, email, role) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO users(username, password, nickname, email, avatar, bio, lang, role) "
+                + "VALUES (?,?,?,?,?,?,?,?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, user.getUsername());
             ps.setString(2, user.getPassword());
             ps.setString(3, user.getNickname());
             ps.setString(4, user.getEmail());
-            ps.setString(5, user.getRole());
+            ps.setString(5, user.getAvatar());
+            ps.setString(6, user.getBio());
+            ps.setString(7, user.getLang() == null ? "zh" : user.getLang());
+            ps.setString(8, user.getRole());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -189,6 +220,57 @@ public class UserDao {
         }
     }
 
+    public int countUploads(int userId) {
+        return count("SELECT COUNT(*) FROM book WHERE uploader_id = ?", userId);
+    }
+
+    public int countAnnotations(int userId) {
+        String sql = "SELECT COUNT(*) FROM ("
+                + "SELECT book_id, chapter_index, paragraph_index, quote FROM annotation "
+                + "WHERE user_id = ? GROUP BY book_id, chapter_index, paragraph_index, quote) t";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("统计批注失败", e);
+        }
+    }
+
+    public int countComments(int userId) {
+        String sql = "SELECT "
+                + "(SELECT COUNT(*) FROM comment WHERE user_id = ?) + "
+                + "(SELECT COUNT(*) FROM annotation_comment WHERE user_id = ?)";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("统计评论失败", e);
+        }
+    }
+
+    public int countRatings(int userId) {
+        return count("SELECT COUNT(*) FROM rating WHERE user_id = ?", userId);
+    }
+
+    private int count(String sql, int userId) {
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new DataAccessException("统计失败", e);
+        }
+    }
+
     private User mapRow(ResultSet rs) throws SQLException {
         User user = new User();
         user.setId(rs.getInt("id"));
@@ -196,6 +278,9 @@ public class UserDao {
         user.setPassword(rs.getString("password"));
         user.setNickname(rs.getString("nickname"));
         user.setEmail(rs.getString("email"));
+        user.setAvatar(rs.getString("avatar"));
+        user.setBio(rs.getString("bio"));
+        user.setLang(rs.getString("lang"));
         user.setRole(rs.getString("role"));
         Timestamp createdAt = rs.getTimestamp("created_at");
         user.setCreatedAt(createdAt);

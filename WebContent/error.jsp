@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" isErrorPage="true" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" isErrorPage="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <c:set var="code" value="${requestScope['javax.servlet.error.status_code']}"/>
@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>出了点小问题 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=18">
 </head>
 <body class="error-page"><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <div class="error-card">

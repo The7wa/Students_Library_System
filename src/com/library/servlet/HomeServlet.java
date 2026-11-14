@@ -34,6 +34,7 @@ public class HomeServlet extends HttpServlet {
         req.setAttribute("readableCount", bookDao.countReadable());
         req.setAttribute("userCount", userDao.countAll());
         req.setAttribute("greeting", WebUtil.greeting());
+        req.setAttribute("greetingEn", WebUtil.greetingEn());
         req.getRequestDispatcher("/WEB-INF/views/home.jsp").forward(req, resp);
     }
 }

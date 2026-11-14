@@ -13,6 +13,8 @@ CREATE DATABASE IF NOT EXISTS library_db
     COLLATE utf8mb4_unicode_ci;
 USE library_db;
 
+DROP TABLE IF EXISTS annotation_comment;
+DROP TABLE IF EXISTS annotation_like;
 DROP TABLE IF EXISTS rating;
 DROP TABLE IF EXISTS comment;
 DROP TABLE IF EXISTS annotation;
@@ -27,6 +29,9 @@ CREATE TABLE users (
     password    VARCHAR(255) NOT NULL COMMENT 'PBKDF2 哈希',
     nickname    VARCHAR(50)  NOT NULL COMMENT '昵称',
     email       VARCHAR(100) DEFAULT NULL,
+    avatar      VARCHAR(16)  DEFAULT NULL COMMENT '头像 emoji',
+    bio         VARCHAR(255) DEFAULT NULL COMMENT '个人简介',
+    lang        VARCHAR(5)   NOT NULL DEFAULT 'zh' COMMENT '界面语言 zh/en',
     role        VARCHAR(10)  NOT NULL DEFAULT 'USER' COMMENT 'ADMIN / USER',
     created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统用户';
@@ -85,6 +90,25 @@ CREATE TABLE annotation (
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_anno_book_user (book_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='阅读批注';
+
+CREATE TABLE annotation_comment (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    annotation_id INT          NOT NULL,
+    user_id       INT          NOT NULL,
+    parent_id     INT          DEFAULT NULL COMMENT '回复的父评论 id',
+    content       VARCHAR(1000) NOT NULL,
+    created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_annocomment (annotation_id, parent_id, created_at),
+    KEY idx_annocomment_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='批注评论';
+
+CREATE TABLE annotation_like (
+    annotation_id INT NOT NULL,
+    user_id       INT NOT NULL,
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (annotation_id, user_id),
+    KEY idx_annolike_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='批注点赞';
 
 CREATE TABLE comment (
     id            INT AUTO_INCREMENT PRIMARY KEY,

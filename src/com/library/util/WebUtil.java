@@ -59,6 +59,20 @@ public final class WebUtil {
         return "晚上好";
     }
 
+    public static String greetingEn() {
+        int hour = java.time.LocalTime.now().getHour();
+        if (hour < 6) {
+            return "Good night";
+        }
+        if (hour < 12) {
+            return "Good morning";
+        }
+        if (hour < 18) {
+            return "Good afternoon";
+        }
+        return "Good evening";
+    }
+
     /** 把用户输入的安全文本转成 HTML 属性安全的字符串（JSTL fn:escapeXml 的互补工具）。 */
     public static String attr(String value) {
         if (value == null) {

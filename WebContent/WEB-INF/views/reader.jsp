@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
@@ -8,55 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:out value="${book.name}"/> · 第 ${chapterIndex + 1} 章 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16?v=6">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=18">
 </head>
 <body class="reader-page"><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
-<header class="topbar">
-    <div class="topbar-inner">
-        <a class="brand" href="${ctx}/home" aria-label="墨卷书阁首页">
-            <span class="brand-mark">墨</span>
-            <span class="brand-text">
-                <strong>墨卷书阁</strong>
-                <small>LIBRARY SYSTEM</small>
-            </span>
-        </a>
-
-        <form class="global-search" action="${ctx}/search" method="get" role="search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-3.2-3.2"></path>
-            </svg>
-            <input type="text" name="keyword" value="${fn:escapeXml(keyword)}"
-                   placeholder="搜索书名、作者或出版社" autocomplete="off">
-            <button type="submit">检索</button>
-        </form>
-
-        <nav class="topnav" aria-label="主导航">
-            <a class="nav-link" href="${ctx}/home">首页</a>
-            <a class="nav-link" href="${ctx}/search">全部图书</a>
-            <a class="nav-link" href="${ctx}/book?action=myUploads">我的上传</a>
-            <a class="nav-link" href="${ctx}/notification">通知<c:if test="${unreadNotifCount > 0}"><b class="notif-badge">${unreadNotifCount}</b></c:if></a>
-            <c:if test="${loginUser.admin}">
-                <a class="nav-link" href="${ctx}/admin">管理<c:if test="${pendingBookCount > 0}"><b class="notif-badge">${pendingBookCount}</b></c:if></a>
-            </c:if>
-            <span class="nav-divider"></span>
-            <span class="user-chip" title="${fn:escapeXml(loginUser.displayName)}">
-                <span class="avatar">${fn:substring(loginUser.displayName, 0, 1)}</span>
-                <span class="user-meta">
-                    <strong><c:out value="${loginUser.displayName}"/></strong>
-                    <small>${loginUser.admin ? '管理员' : '读者'}</small>
-                </span>
-            </span>
-            <a class="logout" href="${ctx}/auth?action=logout" title="退出登录">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <path d="M16 17l5-5-5-5M21 12H9"></path>
-                </svg>
-                退出
-            </a>
-        </nav>
-    </div>
-</header>
+<%@ include file="common/header.jspf" %>
 
 <c:if test="${not empty sessionScope.flash}">
     <div class="flash-wrap">
@@ -210,6 +165,95 @@
                     </c:if>
                 </div>
             </section>
+
+            <section class="anno-public-section" id="annotations">
+                <div class="anno-public-head">
+                    <h2>书友批注</h2>
+                    <span>${publicAnnotations.size()} 条公开标记 · 评论所有人都能看到</span>
+                </div>
+                <c:choose>
+                    <c:when test="${empty publicAnnotations}">
+                        <p class="anno-comments-empty">本章还没有公开批注，选中一段文字留下第一条吧。</p>
+                    </c:when>
+                    <c:otherwise>
+                        <c:forEach var="a" items="${publicAnnotations}">
+                            <article class="anno-card" id="anno-${a.id}">
+                                <div class="anno-card-head">
+                                    <span class="comment-avatar"><c:out value="${a.userAvatarText}"/></span>
+                                    <div>
+                                        <strong><c:out value="${a.userName}"/>${a.mine ? '（我）' : ''}</strong>
+                                        <small>第 ${a.chapterIndex + 1} 章 · ${fn:substring(a.createdAt, 0, 16)}</small>
+                                    </div>
+                                    <span class="note-color" style="background:${a.color}"></span>
+                                </div>
+                                <blockquote class="anno-quote" style="border-color:${a.color}">
+                                    “<c:out value="${a.quote}"/>”
+                                </blockquote>
+                                <c:if test="${a.mine and not empty a.note}">
+                                    <p class="anno-note"><strong>我的笔记：</strong><c:out value="${a.note}"/></p>
+                                </c:if>
+                                <div class="anno-actions">
+                                    <form action="${ctx}/annotation" method="post">
+                                        <input type="hidden" name="action" value="like">
+                                        <input type="hidden" name="annotationId" value="${a.id}">
+                                        <button type="submit" class="anno-like ${a.likedByMe ? 'liked' : ''}">
+                                            ${a.likedByMe ? '已赞' : '点赞'} ${a.likeCount}
+                                        </button>
+                                    </form>
+                                    <span>${a.commentCount} 条评论</span>
+                                </div>
+
+                                <div class="anno-comments">
+                                    <c:forEach var="cm" items="${commentsByAnnotation[a.id]}">
+                                        <div class="anno-comment ${not empty cm.parentId ? 'reply' : ''}">
+                                            <span class="comment-avatar"><c:out value="${cm.userAvatarText}"/></span>
+                                            <div class="anno-comment-body">
+                                                <div class="anno-comment-head">
+                                                    <strong><c:out value="${cm.userName}"/>${cm.mine ? '（我）' : ''}</strong>
+                                                    <span>${fn:substring(cm.createdAt, 0, 16)}</span>
+                                                    <c:if test="${not empty cm.parentId}"><span>回复</span></c:if>
+                                                </div>
+                                                <p><c:out value="${cm.content}"/></p>
+                                                <div class="anno-comment-tools">
+                                                    <c:if test="${loginUser.admin or cm.mine}">
+                                                        <form action="${ctx}/annotation" method="post"
+                                                              data-confirm="确定删除这条评论吗？">
+                                                            <input type="hidden" name="action" value="deleteComment">
+                                                            <input type="hidden" name="id" value="${cm.id}">
+                                                            <button type="submit" class="link-danger">删除</button>
+                                                        </form>
+                                                    </c:if>
+                                                    <details class="reply-box">
+                                                        <summary>回复</summary>
+                                                        <form action="${ctx}/annotation" method="post" class="reply-form">
+                                                            <input type="hidden" name="action" value="reply">
+                                                            <input type="hidden" name="annotationId" value="${a.id}">
+                                                            <input type="hidden" name="parentId" value="${cm.parentId == null ? cm.id : cm.parentId}">
+                                                            <input type="text" name="content" maxlength="1000"
+                                                                   placeholder="回复 ${fn:escapeXml(cm.userName)}..." required>
+                                                            <button type="submit">发送</button>
+                                                        </form>
+                                                    </details>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </c:forEach>
+                                    <c:if test="${empty commentsByAnnotation[a.id]}">
+                                        <p class="anno-comments-empty">还没有评论，来说两句。</p>
+                                    </c:if>
+                                    <form action="${ctx}/annotation" method="post" class="anno-comment-form">
+                                        <input type="hidden" name="action" value="comment">
+                                        <input type="hidden" name="annotationId" value="${a.id}">
+                                        <textarea name="content" maxlength="1000" required
+                                                  placeholder="对这段划线说点什么……"></textarea>
+                                        <button type="submit">评论</button>
+                                    </form>
+                                </div>
+                            </article>
+                        </c:forEach>
+                    </c:otherwise>
+                </c:choose>
+            </section>
         </article>
 
         <aside class="reader-notes">
@@ -293,8 +337,8 @@
     window.BOOK_ID = ${book.id};
     window.CHAPTER_COUNT = ${chapterCount};
 </script>
-<script src="${ctx}/assets/js/reader.js?v=16"></script>
-<script src="${ctx}/assets/js/app.js?v=16"></script>
+<script src="${ctx}/assets/js/reader.js?v=18"></script>
+<script src="${ctx}/assets/js/app.js?v=18"></script>
 
 </body>
 </html>

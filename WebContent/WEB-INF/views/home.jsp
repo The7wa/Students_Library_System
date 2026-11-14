@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
@@ -9,55 +9,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>首页 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=16?v=6">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=18">
 </head>
 <body><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
-<header class="topbar">
-    <div class="topbar-inner">
-        <a class="brand" href="${ctx}/home" aria-label="墨卷书阁首页">
-            <span class="brand-mark">墨</span>
-            <span class="brand-text">
-                <strong>墨卷书阁</strong>
-                <small>LIBRARY SYSTEM</small>
-            </span>
-        </a>
-
-        <form class="global-search" action="${ctx}/search" method="get" role="search">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <path d="M20 20l-3.2-3.2"></path>
-            </svg>
-            <input type="text" name="keyword" value="${fn:escapeXml(keyword)}"
-                   placeholder="搜索书名、作者或出版社" autocomplete="off">
-            <button type="submit">检索</button>
-        </form>
-
-        <nav class="topnav" aria-label="主导航">
-            <a class="nav-link ${activeNav eq 'home' ? 'active' : ''}" href="${ctx}/home">首页</a>
-            <a class="nav-link ${activeNav eq 'search' ? 'active' : ''}" href="${ctx}/search">全部图书</a>
-            <a class="nav-link" href="${ctx}/book?action=myUploads">我的上传</a>
-            <a class="nav-link" href="${ctx}/notification">通知<c:if test="${unreadNotifCount > 0}"><b class="notif-badge">${unreadNotifCount}</b></c:if></a>
-            <c:if test="${loginUser.admin}">
-                <a class="nav-link" href="${ctx}/admin">管理<c:if test="${pendingBookCount > 0}"><b class="notif-badge">${pendingBookCount}</b></c:if></a>
-            </c:if>
-            <span class="nav-divider"></span>
-            <span class="user-chip" title="${fn:escapeXml(loginUser.displayName)}">
-                <span class="avatar">${fn:substring(loginUser.displayName, 0, 1)}</span>
-                <span class="user-meta">
-                    <strong><c:out value="${loginUser.displayName}"/></strong>
-                    <small>${loginUser.admin ? '管理员' : '读者'}</small>
-                </span>
-            </span>
-            <a class="logout" href="${ctx}/auth?action=logout" title="退出登录">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                    <path d="M16 17l5-5-5-5M21 12H9"></path>
-                </svg>
-                退出
-            </a>
-        </nav>
-    </div>
-</header>
+<%@ include file="common/header.jspf" %>
 
 <c:if test="${not empty sessionScope.flash}">
     <div class="flash-wrap">
@@ -75,8 +30,16 @@
     <section class="hero">
         <div class="hero-copy">
             <span class="eyebrow">WELCOME TO THE LIBRARY</span>
-            <h1>${greeting}，<c:out value="${loginUser.displayName}"/>。<br>今天想从<em>哪个板块</em>开始？</h1>
-            <p>书阁里共有 ${categoryCount} 个板块、${titleCount} 种在馆图书。点开一个板块，就能走进对应的书架，查找、上架或整理藏书。</p>
+            <c:choose>
+                <c:when test="${loginUser.lang eq 'en'}">
+                    <h1>${greetingEn}, <c:out value="${loginUser.displayName}"/>.<br>Which <em>collection</em> would you like to explore?</h1>
+                    <p>There are ${categoryCount} collections and ${titleCount} books in the library. Open one to browse its shelf, add books, or organize your collection.</p>
+                </c:when>
+                <c:otherwise>
+                    <h1>${greeting}，<c:out value="${loginUser.displayName}"/>。<br>今天想从<em>哪个板块</em>开始？</h1>
+                    <p>书阁里共有 ${categoryCount} 个板块、${titleCount} 种在馆图书。点开一个板块，就能走进对应的书架，查找、上架或整理藏书。</p>
+                </c:otherwise>
+            </c:choose>
             <div class="hero-actions">
                 <a class="btn btn-primary" href="#sections">浏览图书板块</a>
                 <a class="btn btn-ghost" href="${ctx}/search">全馆检索</a>
@@ -188,7 +151,7 @@
         <p><span class="footer-brand">墨卷书阁</span> · 让每一本书都回到它的位置</p>
     </div>
 </footer>
-<script src="${ctx}/assets/js/app.js?v=16"></script>
+<script src="${ctx}/assets/js/app.js?v=18"></script>
 
 </body>
 </html>

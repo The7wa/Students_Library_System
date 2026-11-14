@@ -1,10 +1,12 @@
 package com.library.servlet;
 
+import com.library.dao.AnnotationCommentDao;
 import com.library.dao.AnnotationDao;
 import com.library.dao.BookDao;
 import com.library.dao.CommentDao;
 import com.library.dao.RatingDao;
 import com.library.entity.Annotation;
+import com.library.entity.AnnotationComment;
 import com.library.entity.Book;
 import com.library.entity.Chapter;
 import com.library.entity.Comment;
@@ -20,7 +22,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 在线阅读：正文分章、分段落渲染，并加载批注 / 评论 / 评分。
@@ -29,6 +33,7 @@ public class ReadServlet extends HttpServlet {
 
     private final BookDao bookDao = new BookDao();
     private final AnnotationDao annotationDao = new AnnotationDao();
+    private final AnnotationCommentDao annotationCommentDao = new AnnotationCommentDao();
     private final CommentDao commentDao = new CommentDao();
     private final RatingDao ratingDao = new RatingDao();
 
@@ -95,6 +100,18 @@ public class ReadServlet extends HttpServlet {
         }
 
         List<Annotation> annotations = annotationDao.findByBookAndUser(book.getId(), user.getId());
+        List<Annotation> publicAnnotations = annotationDao.findByBookAndChapter(book.getId(), index, user.getId());
+        List<AnnotationComment> annotationComments =
+                annotationCommentDao.findByBookAndChapter(book.getId(), index, user.getId());
+
+        Map<Integer, List<AnnotationComment>> commentsByAnnotation = new LinkedHashMap<>();
+        for (Annotation a : publicAnnotations) {
+            commentsByAnnotation.put(a.getId(), new ArrayList<>());
+        }
+        for (AnnotationComment ac : annotationComments) {
+            commentsByAnnotation.computeIfAbsent(ac.getAnnotationId(), k -> new ArrayList<>()).add(ac);
+        }
+
         List<Comment> comments = commentDao.findByBookAndChapter(book.getId(), index);
 
         req.setAttribute("book", book);
@@ -106,6 +123,8 @@ public class ReadServlet extends HttpServlet {
         req.setAttribute("hasPrev", index > 0);
         req.setAttribute("hasNext", index < chapters.size() - 1);
         req.setAttribute("annotations", annotations);
+        req.setAttribute("publicAnnotations", publicAnnotations);
+        req.setAttribute("commentsByAnnotation", commentsByAnnotation);
         req.setAttribute("annotationsJson", toJson(annotations));
         req.setAttribute("comments", comments);
         req.setAttribute("myStars", ratingDao.findByUser(book.getId(), user.getId()));

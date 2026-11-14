@@ -214,3 +214,75 @@
         });
     })();
 })();
+
+/* ---------- 头像下拉菜单 ---------- */
+(function () {
+    var menu = document.getElementById('userMenu');
+    if (!menu) {
+        return;
+    }
+    var trigger = menu.querySelector('.user-chip');
+    if (!trigger) {
+        return;
+    }
+
+    function close() {
+        menu.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    trigger.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var open = menu.classList.toggle('open');
+        trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!menu.contains(event.target)) {
+            close();
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            close();
+        }
+    });
+})();
+
+/* ---------- 设置页主题选择 ---------- */
+(function () {
+    var options = document.querySelectorAll('[data-theme-set]');
+    if (!options.length) {
+        return;
+    }
+
+    function mark(theme) {
+        var normalized = theme === 'green' || theme === 'black' ? theme : 'white';
+        options.forEach(function (button) {
+            var value = button.getAttribute('data-theme-set') || 'white';
+            button.classList.toggle('active', value === normalized);
+        });
+    }
+
+    options.forEach(function (button) {
+        button.addEventListener('click', function () {
+            var theme = button.getAttribute('data-theme-set') || 'white';
+            var dot = document.querySelector('.site-theme .theme-dot[data-theme="' + theme + '"]');
+            if (dot) {
+                dot.click();
+            } else {
+                document.body.classList.remove('theme-green', 'theme-black');
+                if (theme === 'green' || theme === 'black') {
+                    document.body.classList.add('theme-' + theme);
+                }
+                try { localStorage.setItem('siteTheme', theme); } catch (e) {}
+            }
+            mark(theme);
+        });
+    });
+
+    var saved = 'white';
+    try { saved = localStorage.getItem('siteTheme') || 'white'; } catch (e) {}
+    mark(saved);
+})();
