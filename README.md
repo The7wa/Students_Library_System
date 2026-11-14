@@ -1,8 +1,8 @@
-﻿# 墨卷书阁 · 图书管理系统
+# 墨卷书阁 · 图书管理系统
 
 一个用 **JSP + Servlet + JDBC + MySQL** 实现的图书管理系统，按 **图书板块 → 书架 → 图书** 三层组织藏书。
 
-当前版本包含：注册登录、角色权限、图书/板块管理、TXT 在线阅读、阅读进度、批注、书友评论/回复/点赞、星级评分、站内通知、个人主页、设置、我的笔记、中英文界面与阅读主题。
+当前版本包含：注册登录、角色权限、图书/板块管理、TXT 在线阅读、阅读进度、私有批注、段落公开评论/回复、星级评分、站内通知、个人主页、设置、我的笔记、中英文界面与阅读主题。
 
 > 项目使用 `javax.servlet`，对应 **Tomcat 9**。Tomcat 10+ 是 `jakarta.servlet`，会报 `ClassNotFoundException`。
 
@@ -25,12 +25,11 @@
 
 - 上传 TXT 正文后分章阅读
 - 划选正文添加彩色批注，同一段原文重复标记只更新最后一条，不会变成日志列表
-- 「我的批注」只显示自己的笔记，笔记内容仅本人可见
-- 「书友批注」展示所有读者的划线原文和颜色，可对划线：
-  - 发表公开评论
-  - 回复评论（一层回复）
-  - 点赞 / 取消点赞
-  - 本人或管理员删除评论
+- 「我的批注」只显示自己的笔记，笔记内容仅本人可见，个人批注不会公开
+- 段落旁显示公开评论数徽标，点击打开评论弹窗：
+  - 所有登录用户查看评论
+  - 发表评论或回复（一层回复）
+  - 评论和回复所有人可见
 - 章末「本章评论」、图书星级评分、平均分展示
 - 阅读进度保存在浏览器本地
 
@@ -117,14 +116,17 @@ mysql -uroot -p --default-character-set=utf8mb4 < sql\library_db.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_reading.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_social.sql
 mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_profile_notes.sql
+mysql -uroot -p --default-character-set=utf8mb4 < sql\upgrade_paragraph_comments.sql
 ```
 
 `upgrade_profile_notes.sql` 会新增：
 
 - `users.avatar`、`users.bio`、`users.lang`
-- `annotation_comment`（批注评论 / 回复）
-- `annotation_like`（批注点赞）
 - 清理同一段原文的重复批注，只保留最后一条
+
+`upgrade_paragraph_comments.sql` 会新增：
+
+- `paragraph_comment`：段落公开评论 / 回复（与私有批注分离）
 
 ---
 

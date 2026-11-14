@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><c:out value="${book.name}"/> · 第 ${chapterIndex + 1} 章 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=18">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=19">
 </head>
 <body class="reader-page"><script>(function(){try{var t=localStorage.getItem("siteTheme")||localStorage.getItem("readerTheme");if(t==="green"||t==="black"){document.body.className+=(document.body.className?" ":"")+"theme-"+t;}}catch(e){}})();</script>
 <%@ include file="common/header.jspf" %>
@@ -98,9 +98,17 @@
             </div>
 
             <div class="reader-text" id="readerText">
-                <c:forEach var="para" items="${paragraphs}" varStatus="st">
-                    <p class="rd-p" id="p-${st.index}" data-p="${st.index}"><c:out value="${para}"/></p>
-                </c:forEach>
+                '<c:forEach var="para" items="${paragraphs}" varStatus="st">
+                    <div class="rd-p-block">
+                        <c:set var="commentCount" value="${paragraphCommentCounts[st.index]}"/>
+                        <c:if test="${commentCount > 0}">
+                            <button type="button" class="p-comment-badge"
+                                    data-comment-p="${st.index}" data-comment-count="${commentCount}"
+                                    title="查看 / 发表评论">💬 ${commentCount}</button>
+                        </c:if>
+                        <p class="rd-p" id="p-${st.index}" data-p="${st.index}"><c:out value="${para}"/></p>
+                    </div>
+                </c:forEach>'
             </div>
 
             <div class="reader-nav">
@@ -165,96 +173,7 @@
                     </c:if>
                 </div>
             </section>
-
-            <section class="anno-public-section" id="annotations">
-                <div class="anno-public-head">
-                    <h2>书友批注</h2>
-                    <span>${publicAnnotations.size()} 条公开标记 · 评论所有人都能看到</span>
-                </div>
-                <c:choose>
-                    <c:when test="${empty publicAnnotations}">
-                        <p class="anno-comments-empty">本章还没有公开批注，选中一段文字留下第一条吧。</p>
-                    </c:when>
-                    <c:otherwise>
-                        <c:forEach var="a" items="${publicAnnotations}">
-                            <article class="anno-card" id="anno-${a.id}">
-                                <div class="anno-card-head">
-                                    <span class="comment-avatar"><c:out value="${a.userAvatarText}"/></span>
-                                    <div>
-                                        <strong><c:out value="${a.userName}"/>${a.mine ? '（我）' : ''}</strong>
-                                        <small>第 ${a.chapterIndex + 1} 章 · ${fn:substring(a.createdAt, 0, 16)}</small>
-                                    </div>
-                                    <span class="note-color" style="background:${a.color}"></span>
-                                </div>
-                                <blockquote class="anno-quote" style="border-color:${a.color}">
-                                    “<c:out value="${a.quote}"/>”
-                                </blockquote>
-                                <c:if test="${a.mine and not empty a.note}">
-                                    <p class="anno-note"><strong>我的笔记：</strong><c:out value="${a.note}"/></p>
-                                </c:if>
-                                <div class="anno-actions">
-                                    <form action="${ctx}/annotation" method="post">
-                                        <input type="hidden" name="action" value="like">
-                                        <input type="hidden" name="annotationId" value="${a.id}">
-                                        <button type="submit" class="anno-like ${a.likedByMe ? 'liked' : ''}">
-                                            ${a.likedByMe ? '已赞' : '点赞'} ${a.likeCount}
-                                        </button>
-                                    </form>
-                                    <span>${a.commentCount} 条评论</span>
-                                </div>
-
-                                <div class="anno-comments">
-                                    <c:forEach var="cm" items="${commentsByAnnotation[a.id]}">
-                                        <div class="anno-comment ${not empty cm.parentId ? 'reply' : ''}">
-                                            <span class="comment-avatar"><c:out value="${cm.userAvatarText}"/></span>
-                                            <div class="anno-comment-body">
-                                                <div class="anno-comment-head">
-                                                    <strong><c:out value="${cm.userName}"/>${cm.mine ? '（我）' : ''}</strong>
-                                                    <span>${fn:substring(cm.createdAt, 0, 16)}</span>
-                                                    <c:if test="${not empty cm.parentId}"><span>回复</span></c:if>
-                                                </div>
-                                                <p><c:out value="${cm.content}"/></p>
-                                                <div class="anno-comment-tools">
-                                                    <c:if test="${loginUser.admin or cm.mine}">
-                                                        <form action="${ctx}/annotation" method="post"
-                                                              data-confirm="确定删除这条评论吗？">
-                                                            <input type="hidden" name="action" value="deleteComment">
-                                                            <input type="hidden" name="id" value="${cm.id}">
-                                                            <button type="submit" class="link-danger">删除</button>
-                                                        </form>
-                                                    </c:if>
-                                                    <details class="reply-box">
-                                                        <summary>回复</summary>
-                                                        <form action="${ctx}/annotation" method="post" class="reply-form">
-                                                            <input type="hidden" name="action" value="reply">
-                                                            <input type="hidden" name="annotationId" value="${a.id}">
-                                                            <input type="hidden" name="parentId" value="${cm.parentId == null ? cm.id : cm.parentId}">
-                                                            <input type="text" name="content" maxlength="1000"
-                                                                   placeholder="回复 ${fn:escapeXml(cm.userName)}..." required>
-                                                            <button type="submit">发送</button>
-                                                        </form>
-                                                    </details>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </c:forEach>
-                                    <c:if test="${empty commentsByAnnotation[a.id]}">
-                                        <p class="anno-comments-empty">还没有评论，来说两句。</p>
-                                    </c:if>
-                                    <form action="${ctx}/annotation" method="post" class="anno-comment-form">
-                                        <input type="hidden" name="action" value="comment">
-                                        <input type="hidden" name="annotationId" value="${a.id}">
-                                        <textarea name="content" maxlength="1000" required
-                                                  placeholder="对这段划线说点什么……"></textarea>
-                                        <button type="submit">评论</button>
-                                    </form>
-                                </div>
-                            </article>
-                        </c:forEach>
-                    </c:otherwise>
-                </c:choose>
-            </section>
-        </article>
+</article>
 
         <aside class="reader-notes">
             <div class="notes-head">
@@ -320,10 +239,45 @@
         <textarea name="note" id="annoNote" maxlength="1000"
                   placeholder="写下你的想法……（可以不填，仅做颜色标记）"></textarea>
         <div class="anno-actions">
+            <button type="button" class="btn btn-soft btn-sm" id="annoCommentBtn">公开评论</button>
             <button type="button" class="btn btn-ghost btn-sm" id="annoCancel">取消</button>
             <button type="submit" class="btn btn-primary btn-sm">保存批注</button>
         </div>
     </form>
+</div>
+
+<!-- 段落公开评论弹窗：所有人可见 -->
+<div class="p-comment-modal" id="pCommentModal" hidden>
+    <div class="p-comment-backdrop" data-comment-close></div>
+    <div class="p-comment-card" role="dialog" aria-modal="true" aria-labelledby="pCommentTitle">
+        <div class="p-comment-head">
+            <div>
+                <span class="kicker">DISCUSSION</span>
+                <h3 id="pCommentTitle">段落评论</h3>
+            </div>
+            <button type="button" class="p-comment-close" data-comment-close aria-label="关闭">×</button>
+        </div>
+        <p class="p-comment-topic" id="pCommentTopic"></p>
+        <div class="p-comment-list" id="pCommentList"></div>
+        <form action="${ctx}/paragraph-comment" method="post" id="pCommentForm" class="p-comment-form">
+            <input type="hidden" name="action" id="pCommentAction" value="add">
+            <input type="hidden" name="bookId" value="${book.id}">
+            <input type="hidden" name="chapter" value="${chapterIndex}">
+            <input type="hidden" name="paragraph" id="pCommentParagraph" value="0">
+            <input type="hidden" name="quote" id="pCommentQuote" value="">
+            <input type="hidden" name="parentId" id="pCommentParent" value="">
+            <div class="p-comment-reply-hint" id="pCommentReplyHint" hidden>
+                正在回复 <strong id="pCommentReplyName"></strong>
+                <button type="button" id="pCommentCancelReply">取消回复</button>
+            </div>
+            <textarea name="content" id="pCommentContent" maxlength="1000" required
+                      placeholder="对这段文字发表公开评论……"></textarea>
+            <div class="p-comment-form-foot">
+                <span>所有读者可见 · 支持回复</span>
+                <button type="submit" class="btn btn-primary btn-sm">发表评论</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <footer class="site-footer">
@@ -333,12 +287,14 @@
 </footer>
 <script>
     window.MY_ANNOTATIONS = ${annotationsJson};
+    window.PARAGRAPH_COMMENTS = ${paragraphCommentsJson};
     window.CHAPTER_INDEX = ${chapterIndex};
     window.BOOK_ID = ${book.id};
     window.CHAPTER_COUNT = ${chapterCount};
 </script>
-<script src="${ctx}/assets/js/reader.js?v=18"></script>
-<script src="${ctx}/assets/js/app.js?v=18"></script>
+<script src="${ctx}/assets/js/reader.js?v=19"></script>
+<script src="${ctx}/assets/js/paragraph-comments.js?v=19"></script>
+<script src="${ctx}/assets/js/app.js?v=19"></script>
 
 </body>
 </html>

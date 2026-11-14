@@ -15,6 +15,7 @@ USE library_db;
 
 DROP TABLE IF EXISTS annotation_comment;
 DROP TABLE IF EXISTS annotation_like;
+DROP TABLE IF EXISTS paragraph_comment;
 DROP TABLE IF EXISTS rating;
 DROP TABLE IF EXISTS comment;
 DROP TABLE IF EXISTS annotation;
@@ -109,6 +110,20 @@ CREATE TABLE annotation_like (
     PRIMARY KEY (annotation_id, user_id),
     KEY idx_annolike_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='批注点赞';
+
+CREATE TABLE paragraph_comment (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    book_id         INT           NOT NULL,
+    chapter_index   INT           NOT NULL,
+    paragraph_index INT           NOT NULL,
+    quote           VARCHAR(500)  DEFAULT NULL COMMENT '选中原文，可为空',
+    user_id         INT           NOT NULL,
+    parent_id       INT           DEFAULT NULL COMMENT '回复的父评论 id',
+    content         VARCHAR(1000) NOT NULL,
+    created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_pcomment_target (book_id, chapter_index, paragraph_index, created_at),
+    KEY idx_pcomment_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='段落公开评论';
 
 CREATE TABLE comment (
     id            INT AUTO_INCREMENT PRIMARY KEY,

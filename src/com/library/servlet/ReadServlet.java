@@ -1,15 +1,15 @@
 package com.library.servlet;
 
-import com.library.dao.AnnotationCommentDao;
 import com.library.dao.AnnotationDao;
 import com.library.dao.BookDao;
 import com.library.dao.CommentDao;
+import com.library.dao.ParagraphCommentDao;
 import com.library.dao.RatingDao;
 import com.library.entity.Annotation;
-import com.library.entity.AnnotationComment;
 import com.library.entity.Book;
 import com.library.entity.Chapter;
 import com.library.entity.Comment;
+import com.library.entity.ParagraphComment;
 import com.library.entity.User;
 import com.library.util.BookContentStore;
 import com.library.util.TxtBookParser;
@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +32,7 @@ public class ReadServlet extends HttpServlet {
 
     private final BookDao bookDao = new BookDao();
     private final AnnotationDao annotationDao = new AnnotationDao();
-    private final AnnotationCommentDao annotationCommentDao = new AnnotationCommentDao();
+    private final ParagraphCommentDao paragraphCommentDao = new ParagraphCommentDao();
     private final CommentDao commentDao = new CommentDao();
     private final RatingDao ratingDao = new RatingDao();
 
@@ -100,19 +99,11 @@ public class ReadServlet extends HttpServlet {
         }
 
         List<Annotation> annotations = annotationDao.findByBookAndUser(book.getId(), user.getId());
-        List<Annotation> publicAnnotations = annotationDao.findByBookAndChapter(book.getId(), index, user.getId());
-        List<AnnotationComment> annotationComments =
-                annotationCommentDao.findByBookAndChapter(book.getId(), index, user.getId());
-
-        Map<Integer, List<AnnotationComment>> commentsByAnnotation = new LinkedHashMap<>();
-        for (Annotation a : publicAnnotations) {
-            commentsByAnnotation.put(a.getId(), new ArrayList<>());
-        }
-        for (AnnotationComment ac : annotationComments) {
-            commentsByAnnotation.computeIfAbsent(ac.getAnnotationId(), k -> new ArrayList<>()).add(ac);
-        }
-
         List<Comment> comments = commentDao.findByBookAndChapter(book.getId(), index);
+        Map<Integer, Integer> paragraphCommentCounts =
+                paragraphCommentDao.countsByChapter(book.getId(), index);
+        List<ParagraphComment> paragraphComments =
+                paragraphCommentDao.findByChapter(book.getId(), index, user.getId());
 
         req.setAttribute("book", book);
         req.setAttribute("chapters", chapters);
@@ -123,9 +114,9 @@ public class ReadServlet extends HttpServlet {
         req.setAttribute("hasPrev", index > 0);
         req.setAttribute("hasNext", index < chapters.size() - 1);
         req.setAttribute("annotations", annotations);
-        req.setAttribute("publicAnnotations", publicAnnotations);
-        req.setAttribute("commentsByAnnotation", commentsByAnnotation);
         req.setAttribute("annotationsJson", toJson(annotations));
+        req.setAttribute("paragraphCommentCounts", paragraphCommentCounts);
+        req.setAttribute("paragraphCommentsJson", toParagraphCommentsJson(paragraphComments));
         req.setAttribute("comments", comments);
         req.setAttribute("myStars", ratingDao.findByUser(book.getId(), user.getId()));
         req.setAttribute("avgStars", book.getAvgStars());
@@ -155,8 +146,32 @@ public class ReadServlet extends HttpServlet {
         return sb.append(']').toString();
     }
 
-    private String escape(String value) {
-        if (value == null) {
+    /**
+     * 段落评论 JSON，供阅读页评论弹窗使用。
+     */
+    private String toParagraphCommentsJson(List<ParagraphComment> comments) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < comments.size(); i++) {
+            ParagraphComment c = comments.get(i);
+            if (i > 0) {
+                sb.append(',');
+            }
+            sb.append('{')
+                    .append("\"id\":").append(c.getId()).append(',')
+                    .append("\"p\":").append(c.getParagraphIndex()).append(',')
+                    .append("\"parentId\":").append(c.getParentId() == null ? "null" : c.getParentId()).append(',')
+                    .append("\"quote\":\"").append(escape(c.getQuote())).append("\",")
+                    .append("\"user\":\"").append(escape(c.getUserName())).append("\",")
+                    .append("\"avatar\":\"").append(escape(c.getUserAvatarText())).append("\",")
+                    .append("\"content\":\"").append(escape(c.getContent())).append("\",")
+                    .append("\"createdAt\":\"").append(escape(c.getCreatedAt() == null ? "" : c.getCreatedAt().toString())).append("\",")
+                    .append("\"mine\":").append(c.isMine())
+                    .append('}');
+        }
+        return sb.append(']').toString();
+    }
+
+    private String escape(String value) {        if (value == null) {
             return "";
         }
         StringBuilder sb = new StringBuilder(value.length());

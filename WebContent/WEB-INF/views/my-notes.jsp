@@ -8,7 +8,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>我的笔记 · 墨卷书阁</title>
-    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=18">
+    <link rel="stylesheet" href="${ctx}/assets/css/app.css?v=19">
 </head>
 <body>
 <%@ include file="common/header.jspf" %>

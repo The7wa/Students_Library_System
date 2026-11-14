@@ -110,6 +110,15 @@
     </servlet-mapping>
 
     <servlet>
+        <servlet-name>paragraphCommentServlet</servlet-name>
+        <servlet-class>com.library.servlet.ParagraphCommentServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>paragraphCommentServlet</servlet-name>
+        <url-pattern>/paragraph-comment</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
         <servlet-name>adminServlet</servlet-name>
         <servlet-class>com.library.servlet.AdminServlet</servlet-class>
     </servlet>
